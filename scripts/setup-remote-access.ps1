@@ -19,8 +19,18 @@ if (-not $isAdmin) {
     exit 1
 }
 
-# --- Step 1: Install OpenSSH Server ---
-Write-Host "[1/6] Installing OpenSSH Server..." -ForegroundColor Yellow
+# --- Step 1: Set network to Private (allows inbound connections) ---
+Write-Host "[1/7] Setting network profile to Private..." -ForegroundColor Yellow
+$publicProfiles = Get-NetConnectionProfile | Where-Object { $_.NetworkCategory -eq 'Public' }
+if ($publicProfiles) {
+    $publicProfiles | Set-NetConnectionProfile -NetworkCategory Private
+    Write-Host "      Set $($publicProfiles.Count) network(s) to Private." -ForegroundColor Green
+} else {
+    Write-Host "      Already Private." -ForegroundColor Green
+}
+
+# --- Step 2: Install OpenSSH Server ---
+Write-Host "[2/7] Installing OpenSSH Server..." -ForegroundColor Yellow
 $sshCapability = Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*'
 if ($sshCapability.State -ne 'Installed') {
     Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0 | Out-Null
@@ -29,14 +39,14 @@ if ($sshCapability.State -ne 'Installed') {
     Write-Host "      Already installed." -ForegroundColor Green
 }
 
-# --- Step 2: Start and enable SSH service ---
-Write-Host "[2/6] Starting SSH service..." -ForegroundColor Yellow
+# --- Step 3: Start and enable SSH service ---
+Write-Host "[3/7] Starting SSH service..." -ForegroundColor Yellow
 Start-Service sshd -ErrorAction SilentlyContinue
 Set-Service -Name sshd -StartupType Automatic
 Write-Host "      SSH running and set to auto-start." -ForegroundColor Green
 
-# --- Step 3: Firewall rule ---
-Write-Host "[3/6] Checking firewall..." -ForegroundColor Yellow
+# --- Step 4: Firewall rule ---
+Write-Host "[4/7] Checking firewall..." -ForegroundColor Yellow
 $rule = Get-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -ErrorAction SilentlyContinue
 if (-not $rule) {
     New-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -DisplayName 'OpenSSH Server (sshd)' `
@@ -46,8 +56,8 @@ if (-not $rule) {
     Write-Host "      Firewall rule exists." -ForegroundColor Green
 }
 
-# --- Step 4: Install prerequisites via winget ---
-Write-Host "[4/6] Installing prerequisites..." -ForegroundColor Yellow
+# --- Step 5: Install prerequisites via winget ---
+Write-Host "[5/7] Installing prerequisites..." -ForegroundColor Yellow
 
 # Check winget availability
 $winget = Get-Command winget -ErrorAction SilentlyContinue
@@ -83,8 +93,8 @@ Install-IfMissing -TestCmd "python" -WingetId "Python.Python.3.11" -Label "Pytho
 Install-IfMissing -TestCmd "git"    -WingetId "Git.Git"            -Label "Git"
 Install-IfMissing -TestCmd "node"   -WingetId "OpenJS.NodeJS.LTS"  -Label "Node.js LTS"
 
-# --- Step 5: Install Pixel's SSH public key ---
-Write-Host "[5/6] Installing Pixel's SSH key..." -ForegroundColor Yellow
+# --- Step 6: Install Pixel's SSH public key ---
+Write-Host "[6/7] Installing Pixel's SSH key..." -ForegroundColor Yellow
 
 $pixelKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAMFV/IgeRN1O+ah1jh5Zv/gE0EDHsfACX1n5nolYbOL rad_t@gopo"
 $adminKeyFile = "$env:ProgramData\ssh\administrators_authorized_keys"
@@ -108,8 +118,8 @@ if (!(Test-Path $userKeyFile) -or !(Select-String -Path $userKeyFile -SimpleMatc
     Write-Host "      Key already present (user)." -ForegroundColor Green
 }
 
-# --- Step 6: Gather connection info ---
-Write-Host "[6/6] Gathering connection info..." -ForegroundColor Yellow
+# --- Step 7: Gather connection info ---
+Write-Host "[7/7] Gathering connection info..." -ForegroundColor Yellow
 
 $username = $env:USERNAME
 $hostname = $env:COMPUTERNAME
