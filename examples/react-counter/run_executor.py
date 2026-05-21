@@ -11,14 +11,14 @@ import os
 import sqlite3
 import sys
 
-# Add bumblebee root to path
+# Add repo root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from bumblebee.engine.config import load_config
-from bumblebee.engine.event_log import EventLog, init_db
-from bumblebee.engine.executor import Executor
-from bumblebee.engine.qa import static_check
-from bumblebee.engine.state_machine import StateMachine
+from engine.config import load_config
+from engine.event_log import EventLog, init_db
+from engine.executor import Executor
+from engine.qa import static_check
+from engine.state_machine import StateMachine
 
 logging.basicConfig(
     level=logging.INFO,

@@ -9,10 +9,10 @@ import sqlite3
 import sys
 import os
 
-# Add bumblebee root to path
+# Add repo root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from bumblebee.engine.event_log import init_db
+from engine.event_log import init_db
 
 conn = sqlite3.connect("tickets.db")
 conn.row_factory = sqlite3.Row

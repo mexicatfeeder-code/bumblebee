@@ -39,10 +39,10 @@ import argparse
 import os
 import sys
 
-sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[2]))
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1]))
 
-from bumblebee.engine.config import load_config
-from bumblebee.engine.qa import functional_probe
+from engine.config import load_config
+from engine.qa import functional_probe
 import json
 import logging
 
@@ -57,8 +57,8 @@ def main():
     parser.add_argument("--ticket", default="manual-smoke-test", help="Ticket ID for screenshot naming")
     args = parser.parse_args()
 
-    workspace = __import__("pathlib").Path(__file__).resolve().parents[2]
-    config_path = workspace / "bumblebee" / "projects" / args.project / "project-config.json"
+    repo_root = __import__("pathlib").Path(__file__).resolve().parents[1]
+    config_path = repo_root / "projects" / args.project / "project-config.json"
 
     if not config_path.exists():
         log.error(f"Project config not found: {config_path}")
