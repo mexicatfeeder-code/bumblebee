@@ -29,7 +29,7 @@ def load_config() -> dict:
         if _config is not None:
             return _config
         _config_path = _resolve_config_path()
-        with open(_config_path) as f:
+        with open(_config_path, encoding="utf-8-sig") as f:
             _config = json.load(f)
         return _config
 

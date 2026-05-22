@@ -172,7 +172,8 @@ if (-not (Test-Path $configPath)) {
             vision_model_source = "custom"
         }
     }
-    $config | ConvertTo-Json -Depth 4 | Set-Content $configPath -Encoding UTF8
+    $jsonText = $config | ConvertTo-Json -Depth 4
+    [System.IO.File]::WriteAllText($configPath, $jsonText, [System.Text.UTF8Encoding]::new($false))
     Write-Host "  Created dashboard.config.json" -ForegroundColor Green
 }
 else {
