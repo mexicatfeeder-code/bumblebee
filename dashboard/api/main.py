@@ -53,6 +53,10 @@ if _build.exists():
     # Catch-all: serve index.html for any non-API path (SPA routing)
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
+        # Don't intercept API routes
+        if full_path.startswith("api/"):
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"error": "Not found"}, status_code=404)
         # Check if a real file exists (favicon.png, robots.txt, etc.)
         file = _build / full_path
         if file.exists() and file.is_file():
