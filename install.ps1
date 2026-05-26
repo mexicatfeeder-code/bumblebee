@@ -159,18 +159,24 @@ Write-Host "[5/6] Configuring..." -ForegroundColor Yellow
 
 $configPath = Join-Path $bumblebeeRoot "dashboard\dashboard.config.json"
 if (-not (Test-Path $configPath)) {
+    # Auto-discover demo projects
+    $demoPaths = @{}
+    $demosDir = Join-Path $bumblebeeRoot "demos"
+    if (Test-Path $demosDir) {
+        Get-ChildItem $demosDir -Directory | ForEach-Object {
+            $dbFile = Join-Path $_.FullName "tickets.db"
+            if (Test-Path $dbFile) {
+                $relPath = "../demos/$($_.Name)/tickets.db"
+                $demoPaths[$_.Name] = $relPath
+                Write-Host "  Found demo project: $($_.Name)" -ForegroundColor Green
+            }
+        }
+    }
     $config = @{
-        ticketDbPaths = @{}
+        ticketDbPaths = $demoPaths
         apiPort = $Port
         healthChecks = @()
-        workspaceRoot = $bumblebeeRoot
-        ai = @{
-            lemonade_url = "http://[::1]:13305"
-            qa_model_source = "lemonade"
-            decomp_model_source = "lemonade"
-            forge_model_source = "custom"
-            vision_model_source = "custom"
-        }
+        lemonadeUrl = "http://[::1]:13305"
     }
     $jsonText = $config | ConvertTo-Json -Depth 4
     [System.IO.File]::WriteAllText($configPath, $jsonText, [System.Text.UTF8Encoding]::new($false))
