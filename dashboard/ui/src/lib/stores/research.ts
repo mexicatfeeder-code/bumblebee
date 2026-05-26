@@ -33,9 +33,11 @@ function createResearchStore() {
       if (res.ok) {
         const data = await res.json();
         update(s => ({ ...s, tickets: data.tickets ?? [], loading: false, error: null }));
+      } else {
+        update(s => ({ ...s, tickets: [], loading: false, error: null }));
       }
     } catch (e) {
-      update(s => ({ ...s, loading: false, error: 'Failed to load research tickets' }));
+      update(s => ({ ...s, loading: false, error: null }));
     }
   }
 

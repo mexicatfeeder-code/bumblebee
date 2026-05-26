@@ -1,0 +1,27 @@
+{
+  "projects": [
+    {
+      "slug": "food-cart",
+      "name": "Pop-Up Food Cart Ordering App",
+      "description": "React + FastAPI food cart ordering system with menu management, cart, and order tracking",
+      "deliverable_root": "../demos/food-cart/output",
+      "target_system": "local",
+      "status": "running",
+      "created_at": "2026-05-20T00:00:00Z",
+      "prd_path": null,
+      "ref_paths": [],
+      "tech_stack": "React 18 + TypeScript + Vite frontend, FastAPI Python backend, SQLite, Tailwind CSS",
+      "visual_spec_path": null,
+      "architecture_path": null,
+      "checklist": {
+        "named": true,
+        "prd_uploaded": true,
+        "refs_uploaded": false,
+        "qa_complete": true,
+        "approved": true,
+        "scaffolded": true,
+        "running": true
+      }
+    }
+  ]
+}
