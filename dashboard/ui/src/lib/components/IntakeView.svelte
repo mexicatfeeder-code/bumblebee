@@ -6,11 +6,11 @@
   import PrdUpload from './intake/PrdUpload.svelte';
   import ImageUpload from './intake/ImageUpload.svelte';
   import SettingsSection from './intake/SettingsSection.svelte';
-  import AIConfigSection from './intake/AIConfigSection.svelte';
+  // AIConfigSection removed — decomposition uses cloud model by default
   import QAChat from './intake/QAChat.svelte';
   import DecompReview from './intake/DecompReview.svelte';
   import ExecutorControl from './intake/ExecutorControl.svelte';
-  import QAOutputPanels from './intake/QAOutputPanels.svelte';
+
   import ActionButtons from './intake/ActionButtons.svelte';
   import ErrorBanner from './intake/ErrorBanner.svelte';
 
@@ -362,48 +362,7 @@
     <ChecklistStepper {checklist} {status} />
   {/if}
 
-  <!-- Source files -->
-  {#if hasSourceFiles}
-    <div class="source-files">
-      <h3 class="source-heading">Source Files</h3>
-      <div class="source-list">
-        {#if storedPrdPath}
-          <div class="source-row">
-            <span class="source-icon">📄</span>
-            <div class="source-info">
-              <span class="source-name">{storedPrdName}</span>
-              <span class="source-path" title={storedPrdPath}>{storedPrdPath}</span>
-            </div>
-            <div class="source-actions">
-              <a
-                href="/api/intake/projects/{project?.slug}/prd"
-                target="_blank"
-                rel="noopener"
-                class="source-link"
-              >View</a>
-            </div>
-          </div>
-        {/if}
-        {#each storedRefs as ref}
-          <div class="source-row">
-            <span class="source-icon">🖼</span>
-            <div class="source-info">
-              <span class="source-name">{ref.name}</span>
-              <span class="source-path" title={ref.path}>{ref.path}</span>
-            </div>
-            <div class="source-actions">
-              <a
-                href="/api/intake/projects/{project?.slug}/refs/{ref.name}"
-                target="_blank"
-                rel="noopener"
-                class="source-link"
-              >View</a>
-            </div>
-          </div>
-        {/each}
-      </div>
-    </div>
-  {/if}
+
 
   <!-- Error banner -->
   <ErrorBanner
@@ -445,20 +404,7 @@
       on:change={onSettingsChange}
     />
 
-    <AIConfigSection
-      qaModelSource={aiQaModelSource}
-      qaModelId={aiQaModelId}
-      decompModelSource={aiDecompModelSource}
-      decompModelId={aiDecompModelId}
-      forgeModelSource={aiForgeModelSource}
-      forgeModelId={aiForgeModelId}
-      visionModelSource={aiVisionModelSource}
-      visionModelId={aiVisionModelId}
-      customApiBaseUrl={aiCustomApiBaseUrl}
-      customApiKey={aiCustomApiKey}
-      disabled={formDisabled}
-      on:change={onAIConfigChange}
-    />
+
   </div>
 
   <!-- Q&A Chat (shown after project is created and in qa_pending status) -->
@@ -526,87 +472,5 @@
     gap: var(--spacing-panel-gap);
   }
 
-  /* Source files */
-  .source-files {
-    background: var(--color-bg-panel);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: var(--radius-panel);
-    padding: 16px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
 
-  .source-heading {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--color-text-muted);
-    margin: 0;
-  }
-
-  .source-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .source-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 6px;
-  }
-
-  .source-icon {
-    font-size: 16px;
-    flex-shrink: 0;
-  }
-
-  .source-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .source-name {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--color-text-primary);
-    font-family: var(--font-mono);
-  }
-
-  .source-path {
-    font-size: 11px;
-    color: var(--color-text-muted);
-    font-family: var(--font-mono);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .source-actions {
-    flex-shrink: 0;
-  }
-
-  .source-link {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--color-accent-primary);
-    text-decoration: none;
-    padding: 4px 10px;
-    border: 1px solid rgba(58,190,255,0.3);
-    border-radius: 4px;
-    transition: background 0.15s;
-  }
-
-  .source-link:hover {
-    background: rgba(58,190,255,0.08);
-  }
 </style>
