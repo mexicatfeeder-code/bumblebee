@@ -96,7 +96,7 @@ def _make_llm_fn(base_url: str, model_id: str, api_key: str):
         }
 
         # Synchronous call (decompose.py expects sync llm_fn)
-        resp = httpx.post(url, json=payload, headers=headers, timeout=180.0)
+        resp = httpx.post(url, json=payload, headers=headers, timeout=600.0)
         if resp.status_code != 200:
             raise RuntimeError(f"LLM returned {resp.status_code}: {resp.text[:500]}")
         data = resp.json()
@@ -127,7 +127,7 @@ def _make_streaming_llm(base_url: str, model_id: str, api_key: str):
             "stream": True,
         }
 
-        with httpx.stream("POST", url, json=payload, headers=headers, timeout=180.0) as resp:
+        with httpx.stream("POST", url, json=payload, headers=headers, timeout=600.0) as resp:
             if resp.status_code != 200:
                 raise RuntimeError(f"LLM returned {resp.status_code}")
             for line in resp.iter_lines():
