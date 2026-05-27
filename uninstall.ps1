@@ -73,8 +73,25 @@ if ($nodeProcs) {
 # Step 3: Remove files (optional)
 # ---------------------------------------------------------------------------
 
+# Remove desktop shortcuts
+Write-Host "[3/4] Removing desktop shortcuts..." -ForegroundColor Cyan
+$desktop = [Environment]::GetFolderPath("Desktop")
+$removed = 0
+foreach ($name in @("Bumblebee Dashboard.lnk", "Food Cart Demo.lnk")) {
+    $lnk = Join-Path $desktop $name
+    if (Test-Path $lnk) {
+        Remove-Item $lnk -Force -ErrorAction SilentlyContinue
+        $removed++
+    }
+}
+if ($removed -gt 0) {
+    Write-Host "  Removed $removed shortcut(s)." -ForegroundColor Green
+} else {
+    Write-Host "  No shortcuts found." -ForegroundColor Yellow
+}
+
 if (-not $KeepFiles) {
-    Write-Host "[3/3] Removing files..." -ForegroundColor Cyan
+    Write-Host "[4/4] Removing files..." -ForegroundColor Cyan
 
     # If running from inside the bumblebee dir, move out first
     $currentDir = (Get-Location).Path
