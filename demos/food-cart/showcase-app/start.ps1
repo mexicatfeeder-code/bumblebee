@@ -36,5 +36,10 @@ if (!(Test-Path $dbPath)) {
 # Start the server
 Set-Location $backendDir
 Write-Host "Starting on http://localhost:$Port ..." -ForegroundColor Cyan
+Write-Host "Press Ctrl+C to stop." -ForegroundColor Yellow
 Write-Host ""
+
+# Open browser after a short delay
+Start-Job -ScriptBlock { Start-Sleep 2; Start-Process "http://localhost:$using:Port" } | Out-Null
+
 python -m uvicorn main:app --host 0.0.0.0 --port $Port

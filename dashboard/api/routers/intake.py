@@ -16,7 +16,12 @@ def _read_prd(prd_path: str | None, max_chars: int = 4000) -> str | None:
     if not prd_path:
         return None
     try:
-        text = Path(prd_path).read_text(encoding="utf-8", errors="replace").strip()
+        p = Path(prd_path)
+        if not p.is_absolute():
+            # Resolve relative to dashboard root
+            dashboard_root = Path(__file__).resolve().parent.parent.parent
+            p = (dashboard_root / p).resolve()
+        text = p.read_text(encoding="utf-8", errors="replace").strip()
         if len(text) > max_chars:
             text = text[:max_chars] + f"\n\n[…truncated at {max_chars} chars]"
         return text

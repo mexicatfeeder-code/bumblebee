@@ -91,12 +91,18 @@ Keep it factual and actionable. This document will be used to guide the ticket d
 
 def _qa_dir(slug: str) -> Path:
     """Get the Q&A directory for a project."""
+    dashboard_root = Path(__file__).resolve().parent.parent.parent  # dashboard/
+    # Check demos directory first (bundled demo projects)
+    demos_dir = dashboard_root.parent / "demos" / slug
+    if demos_dir.exists():
+        return demos_dir
+    # Then check workspace projects
     config = get_config()
     ws = config.get("workspaceRoot", "")
     if ws:
         return Path(ws) / "bumblebee" / "projects" / slug
     # Fallback: relative to dashboard
-    return Path(__file__).resolve().parent.parent.parent.parent / "projects" / slug
+    return dashboard_root.parent / "projects" / slug
 
 
 def _history_path(slug: str) -> Path:

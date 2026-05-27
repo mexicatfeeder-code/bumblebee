@@ -15,7 +15,7 @@ $shortcutPath = Join-Path $desktop "$Name.lnk"
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($shortcutPath)
 $shortcut.TargetPath = "powershell.exe"
-$shortcut.Arguments = "-ExecutionPolicy Bypass -File `"$startScript`""
+$shortcut.Arguments = "-ExecutionPolicy Bypass -NoExit -File `"$startScript`""
 $shortcut.WorkingDirectory = $AppDir
 $shortcut.Description = "Launch the Food Cart ordering app (built by Bumblebee)"
 $shortcut.Save()

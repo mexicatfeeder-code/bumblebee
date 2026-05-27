@@ -1,0 +1,42 @@
+[
+  {
+    "role": "user",
+    "content": "Here's the PRD for a food cart ordering app. What questions do you have?",
+    "timestamp": "2026-05-20T10:00:00Z"
+  },
+  {
+    "role": "assistant",
+    "content": "Nice project! The PRD is pretty clear. I have a few questions to nail down the implementation:\n\n1. **Tech stack** — Any preference on the frontend framework? React, Vue, Svelte? Or should I pick what fits best?\n\n2. **Port** — The app will run on localhost. Any preferred port, or is 8000 fine?\n\n3. **Admin auth** — You mentioned a simple PIN. Should this be a hardcoded PIN in settings, or configurable through the admin panel itself?",
+    "timestamp": "2026-05-20T10:00:15Z"
+  },
+  {
+    "role": "user",
+    "content": "React with TypeScript and Tailwind for the frontend, FastAPI for the backend. Port 8000 is fine. The admin PIN should be configurable from the admin settings page, with a default of 1234.",
+    "timestamp": "2026-05-20T10:01:00Z"
+  },
+  {
+    "role": "assistant",
+    "content": "Great choices. A few more:\n\n1. **Photo uploads** — Should menu item photos be stored locally on disk, or base64 in the database? Local disk is better for performance. Any max file size?\n\n2. **Real-time updates** — WebSocket for order status makes sense. Should the admin panel also get real-time notifications when new orders come in?\n\n3. **Design style** — Any color scheme or visual direction? Clean and minimal? Bold food-cart vibes? Dark mode?",
+    "timestamp": "2026-05-20T10:01:30Z"
+  },
+  {
+    "role": "user",
+    "content": "Local disk for photos, max 5MB per image. Yes, admin should see new orders in real-time too. Go with a warm, inviting color scheme — think food truck festival vibes. Orange/yellow accents on a light background. No dark mode needed for v1.",
+    "timestamp": "2026-05-20T10:02:15Z"
+  },
+  {
+    "role": "assistant",
+    "content": "Perfect. Last couple:\n\n1. **Order flow** — When a customer submits an order, should they get a simple order number (like #42) or something more memorable? And should there be a sound/notification on the admin side?\n\n2. **Menu categories** — Fixed categories (Mains, Sides, Drinks) or should the admin be able to create custom categories?\n\nI think that covers everything I need. Once you answer these, I can generate the technical summary.",
+    "timestamp": "2026-05-20T10:02:45Z"
+  },
+  {
+    "role": "user",
+    "content": "Simple incrementing order numbers are fine. No sound notifications needed. Let the admin create and manage categories — don't hardcode them.",
+    "timestamp": "2026-05-20T10:03:30Z"
+  },
+  {
+    "role": "assistant",
+    "content": "Got it — all clear. I have enough to generate the technical summary. Click \"Finish Q&A\" when you're ready to proceed to ticket decomposition.",
+    "timestamp": "2026-05-20T10:03:45Z"
+  }
+]
