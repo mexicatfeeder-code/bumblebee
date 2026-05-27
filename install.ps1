@@ -252,6 +252,50 @@ else {
 }
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Step 7: Set up demo apps and desktop shortcuts
+# ---------------------------------------------------------------------------
+
+Write-Host "[7/7] Setting up demo apps..." -ForegroundColor Yellow
+
+$demosDir = Join-Path $bumblebeeRoot "demos"
+if (Test-Path $demosDir) {
+    # Install showcase app deps
+    $showcaseApp = Join-Path $demosDir "food-cart\showcase-app"
+    if (Test-Path $showcaseApp) {
+        $showcaseReqs = Join-Path $showcaseApp "backend\requirements.txt"
+        if (Test-Path $showcaseReqs) {
+            & $python -m pip install -q -r $showcaseReqs 2>&1 | Out-Null
+        }
+        # Seed the demo database
+        $seedScript = Join-Path $showcaseApp "backend\seed.py"
+        $dbFile = Join-Path $showcaseApp "backend\food-cart.db"
+        if ((Test-Path $seedScript) -and !(Test-Path $dbFile)) {
+            Set-Location (Join-Path $showcaseApp "backend")
+            & $python seed.py 2>&1 | Out-Null
+            Write-Host "  Seeded Food Cart demo data." -ForegroundColor Green
+        }
+        # Create desktop shortcut
+        $shortcutScript = Join-Path $showcaseApp "create-shortcut.ps1"
+        if (Test-Path $shortcutScript) {
+            & powershell -ExecutionPolicy Bypass -File $shortcutScript -AppDir $showcaseApp 2>&1 | Out-Null
+        }
+    }
+}
+
+# Create Bumblebee Dashboard desktop shortcut
+$desktop = [Environment]::GetFolderPath("Desktop")
+$shell = New-Object -ComObject WScript.Shell
+$dashShortcut = $shell.CreateShortcut((Join-Path $desktop "Bumblebee Dashboard.lnk"))
+$dashShortcut.TargetPath = "powershell.exe"
+$dashShortcut.Arguments = "-ExecutionPolicy Bypass -File `"$(Join-Path $bumblebeeRoot 'dashboard\start.ps1')`""
+$dashShortcut.WorkingDirectory = Join-Path $bumblebeeRoot "dashboard"
+$dashShortcut.Description = "Launch the Bumblebee coding dashboard"
+$dashShortcut.Save()
+Write-Host "  Created desktop shortcuts." -ForegroundColor Green
+
+Set-Location $bumblebeeRoot
+
 # Done
 # ---------------------------------------------------------------------------
 
