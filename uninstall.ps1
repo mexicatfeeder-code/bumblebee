@@ -31,10 +31,8 @@ $taskName = "Bumblebee-Dashboard"
 $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
 
 if ($task) {
-    if ($task.State -eq "Running") {
-        Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-        Write-Host "  Stopped task." -ForegroundColor Green
-    }
+    Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 1
     Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
     Write-Host "  Removed scheduled task '$taskName'." -ForegroundColor Green
 } else {
@@ -53,21 +51,22 @@ if (-not $bumblebeeRoot) {
     $bumblebeeRoot = (Get-Location).Path
 }
 
-$killed = 0
-Get-Process python -ErrorAction SilentlyContinue | ForEach-Object {
-    try {
-        $cmdline = (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)" -ErrorAction SilentlyContinue).CommandLine
-        if ($cmdline -and $cmdline -match "uvicorn" -and $cmdline -match "api\.main") {
-            Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
-            $killed++
-        }
-    } catch {}
+# Kill ALL python processes to release file locks
+$pyProcs = Get-Process python -ErrorAction SilentlyContinue
+if ($pyProcs) {
+    $pyProcs | Stop-Process -Force -ErrorAction SilentlyContinue
+    Write-Host "  Stopped $($pyProcs.Count) Python process(es)." -ForegroundColor Green
+    Start-Sleep -Seconds 2
+} else {
+    Write-Host "  No Python processes running." -ForegroundColor Yellow
 }
 
-if ($killed -gt 0) {
-    Write-Host "  Stopped $killed dashboard process(es)." -ForegroundColor Green
-} else {
-    Write-Host "  No dashboard processes running." -ForegroundColor Yellow
+# Also kill any node processes that might hold locks
+$nodeProcs = Get-Process node -ErrorAction SilentlyContinue
+if ($nodeProcs) {
+    $nodeProcs | Stop-Process -Force -ErrorAction SilentlyContinue
+    Write-Host "  Stopped $($nodeProcs.Count) Node process(es)." -ForegroundColor Green
+    Start-Sleep -Seconds 1
 }
 
 # ---------------------------------------------------------------------------
@@ -83,12 +82,34 @@ if (-not $KeepFiles) {
         Set-Location $env:USERPROFILE
     }
 
-    try {
-        Remove-Item $bumblebeeRoot -Recurse -Force -ErrorAction Stop
+    $removed = $false
+    for ($i = 1; $i -le 3; $i++) {
+        try {
+            Remove-Item $bumblebeeRoot -Recurse -Force -ErrorAction Stop
+            $removed = $true
+            break
+        } catch {
+            if ($i -lt 3) {
+                Write-Host "  Retry $i/3 — waiting for file locks to release..." -ForegroundColor Yellow
+                Start-Sleep -Seconds 3
+            }
+        }
+    }
+    if ($removed) {
         Write-Host "  Removed $bumblebeeRoot" -ForegroundColor Green
-    } catch {
-        Write-Host "  Could not fully remove directory (files may be in use)." -ForegroundColor Red
-        Write-Host "  Try closing all terminals and deleting manually: $bumblebeeRoot" -ForegroundColor Yellow
+    } else {
+        Write-Host "  Could not fully remove directory. Trying robocopy cleanup..." -ForegroundColor Yellow
+        # Create empty temp dir and mirror it over the target to force-delete
+        $emptyDir = Join-Path $env:TEMP "bumblebee-empty-$(Get-Random)"
+        New-Item -ItemType Directory -Path $emptyDir -Force | Out-Null
+        robocopy $emptyDir $bumblebeeRoot /MIR /NFL /NDL /NJH /NJS /nc /ns /np 2>&1 | Out-Null
+        Remove-Item $bumblebeeRoot -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item $emptyDir -Force -ErrorAction SilentlyContinue
+        if (!(Test-Path $bumblebeeRoot)) {
+            Write-Host "  Removed $bumblebeeRoot (via robocopy)" -ForegroundColor Green
+        } else {
+            Write-Host "  Some files remain. Close all terminals and delete manually: $bumblebeeRoot" -ForegroundColor Red
+        }
     }
 } else {
     Write-Host "[3/3] Keeping files (--KeepFiles)." -ForegroundColor Yellow
