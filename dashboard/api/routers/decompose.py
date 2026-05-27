@@ -52,7 +52,15 @@ def _resolve_decomp_model(project: dict | None = None) -> tuple[str, str, str]:
             model_id = proj_ai["decomp_model_id"]
 
     if source == "lemonade":
-        base_url = ai.get("lemonade_url", DEFAULT_LEMONADE_URL)
+        base_url = config.get("lemonadeUrl") or ai.get("lemonade_url", DEFAULT_LEMONADE_URL)
+        # Auto-detect model from Lemonade if not explicitly set
+        if not model_id:
+            try:
+                resp = httpx.get(f"{base_url.rstrip('/')}/api/v1/health", timeout=5.0)
+                if resp.status_code == 200:
+                    model_id = resp.json().get("model_loaded", "")
+            except Exception:
+                pass
         return base_url, model_id, ""
     else:
         base_url = ai.get("custom_api_base_url", "https://api.openai.com/v1")
@@ -102,13 +110,23 @@ def _get_prd_text(project: dict) -> str:
     if not prd_path:
         return ""
     try:
-        return Path(prd_path).read_text(encoding="utf-8", errors="replace").strip()
+        p = Path(prd_path)
+        if not p.is_absolute():
+            dashboard_root = Path(__file__).resolve().parent.parent.parent
+            p = (dashboard_root / p).resolve()
+        return p.read_text(encoding="utf-8", errors="replace").strip()
     except Exception:
         return ""
 
 
 def _get_qa_summary(slug: str) -> str:
     """Read the Q&A summary if it exists."""
+    dashboard_root = Path(__file__).resolve().parent.parent.parent
+    # Check demos directory first
+    demos_path = dashboard_root.parent / "demos" / slug / "qa-summary.md"
+    if demos_path.exists():
+        return demos_path.read_text(encoding="utf-8", errors="replace").strip()
+    # Then check workspace projects
     config = get_config()
     ws = config.get("workspaceRoot", "")
     if ws:
@@ -122,21 +140,25 @@ def _get_qa_summary(slug: str) -> str:
 
 def _get_project_config_path(slug: str) -> Path:
     """Get the project-config.json path for a project."""
+    return _project_dir(slug) / "project-config.json"
+
+
+def _project_dir(slug: str) -> Path:
+    """Resolve the project directory, checking demos/ first."""
+    dashboard_root = Path(__file__).resolve().parent.parent.parent
+    demos = dashboard_root.parent / "demos" / slug
+    if demos.exists():
+        return demos
     config = get_config()
     ws = config.get("workspaceRoot", "")
     if ws:
-        return Path(ws) / "bumblebee" / "projects" / slug / "project-config.json"
-    return _BUMBLEBEE_ROOT / "projects" / slug / "project-config.json"
+        return Path(ws) / "bumblebee" / "projects" / slug
+    return _BUMBLEBEE_ROOT / "projects" / slug
 
 
 def _plan_cache_path(slug: str) -> Path:
     """Temporary storage for the generated plan before commit."""
-    config = get_config()
-    ws = config.get("workspaceRoot", "")
-    if ws:
-        d = Path(ws) / "bumblebee" / "projects" / slug
-    else:
-        d = _BUMBLEBEE_ROOT / "projects" / slug
+    d = _project_dir(slug)
     d.mkdir(parents=True, exist_ok=True)
     return d / "decomp-plan.json"
 

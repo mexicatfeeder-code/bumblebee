@@ -155,7 +155,15 @@ def _resolve_qa_model(project: dict | None = None) -> tuple[str, str, str]:
             model_id = proj_ai["qa_model_id"]
 
     if source == "lemonade":
-        base_url = ai.get("lemonade_url", DEFAULT_LEMONADE_URL)
+        base_url = config.get("lemonadeUrl") or ai.get("lemonade_url", DEFAULT_LEMONADE_URL)
+        # Auto-detect model from Lemonade if not explicitly set
+        if not model_id:
+            try:
+                resp = httpx.get(f"{base_url.rstrip('/')}/api/v1/health", timeout=5.0)
+                if resp.status_code == 200:
+                    model_id = resp.json().get("model_loaded", "")
+            except Exception:
+                pass
         return base_url, model_id, ""
     else:
         base_url = (
