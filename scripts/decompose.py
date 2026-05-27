@@ -279,8 +279,7 @@ Tech stack: {tech_stack or "Determine from PRD/Q&A summary"}
   "worker_done_criteria": "Specific: file exists, exports X, handles Y",
   "qa_done_criteria": "What to verify",
   "qa_cmd": [],
-  "requires_live_review": false,
-  "is_parent": false
+  "requires_live_review": false
 }}
 ```
 
@@ -288,7 +287,7 @@ Tech stack: {tech_stack or "Determine from PRD/Q&A summary"}
 
 1. **IDs**: `{slug_upper}-P<gate>-<3-digit-seq>` (e.g. {slug_upper}-P0-001, {slug_upper}-P1-003)
 2. **Gates**: Use 3-5 gates. Gate 0 = foundation (types, DB, shared components, API skeleton). Gate 1+ = features.
-3. **required_output_files**: MANDATORY for every ticket. Exact relative paths. **1-3 files per ticket maximum.** Split larger work into multiple tickets. More small tickets is always better than fewer large ones.
+3. **required_output_files**: MANDATORY for every ticket. Exact relative paths. **1-3 files per ticket maximum. NO EXCEPTIONS, including foundation/setup tickets.** Split larger work into multiple tickets. A 13-file setup must become 5-6 separate tickets. More small tickets is always better than fewer large ones.
 4. **depends_on**: Reference ticket IDs from earlier gates when the ticket needs those files.
 5. **context_files**: List files from earlier tickets that Forge should READ to understand the codebase. Critical for consistency.
 6. **constraints**: Inline specific patterns Forge must follow (e.g. "Use `router.get()` not `app.get()`", "Import Button from '../ui/Button'"). Forge hallucinates APIs without these.
