@@ -68,9 +68,15 @@ async def get_prd(slug: str):
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     prd_path = project.get("prd_path")
-    if not prd_path or not Path(prd_path).exists():
+    if not prd_path:
         raise HTTPException(status_code=404, detail="PRD file not found")
-    return FileResponse(str(prd_path), filename=Path(prd_path).name)
+    p = Path(prd_path)
+    if not p.is_absolute():
+        dashboard_root = Path(__file__).resolve().parent.parent.parent
+        p = (dashboard_root / p).resolve()
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="PRD file not found")
+    return FileResponse(str(p), filename=p.name)
 
 
 @router.get("/intake/projects/{slug}/refs/{filename}")
@@ -78,7 +84,16 @@ async def get_ref_image(slug: str, filename: str):
     project = get_project(slug)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    # Check uploads dir first
     path = _uploads_dir(slug) / filename
-    if not path.exists() or not path.is_file():
-        raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(str(path))
+    if path.exists() and path.is_file():
+        return FileResponse(str(path))
+    # Check stored ref_paths from registry (may be relative paths)
+    dashboard_root = Path(__file__).resolve().parent.parent.parent  # dashboard/
+    for ref in (project.get("ref_paths") or []):
+        rp = Path(ref)
+        if not rp.is_absolute():
+            rp = (dashboard_root / rp).resolve()
+        if rp.exists() and rp.name == filename:
+            return FileResponse(str(rp))
+    raise HTTPException(status_code=404, detail="File not found")

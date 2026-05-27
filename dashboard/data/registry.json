@@ -9,7 +9,7 @@
       "status": "qa_complete",
       "created_at": "2026-05-20T00:00:00Z",
       "prd_path": "../demos/food-cart/prd.md",
-      "ref_paths": [],
+      "ref_paths": ["../demos/food-cart/visual-ref.png"],
       "tech_stack": "React 18 + TypeScript + Vite frontend, FastAPI Python backend, SQLite, Tailwind CSS",
       "visual_spec_path": null,
       "architecture_path": null,
