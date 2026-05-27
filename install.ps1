@@ -152,15 +152,19 @@ else {
 Set-Location $bumblebeeRoot
 
 # ---------------------------------------------------------------------------
-# Step 5: Ensure Lemonade is running with coding model loaded
+# Step 5: Ensure Lemonade is running with dual-model support
 # ---------------------------------------------------------------------------
 
 Write-Host "[5/8] Checking Lemonade (local AI server)..." -ForegroundColor Yellow
 
 $lemonadeUrl = "http://[::1]:13305"
 $lemonadeExe = Join-Path $env:LOCALAPPDATA "lemonade_server\bin\LemonadeServer.exe"
+$lemonadeCli = Join-Path $env:LOCALAPPDATA "lemonade_server\bin\lemonade.exe"
 $requiredModel = "Qwen3.6-27B-GGUF"
 $requiredContext = 32768
+$siftModel = "user.gemma-4-E4B-it-GGUF"
+$siftCheckpoint = "unsloth/gemma-4-E4B-it-GGUF:UD-Q4_K_XL"
+$siftContext = 32768
 $lemonadeOk = $false
 
 function Test-LemonadeHealth {
@@ -172,93 +176,156 @@ function Test-LemonadeHealth {
     }
 }
 
+function Start-LemonadeAndWait {
+    if (-not (Test-Path $lemonadeExe)) {
+        Write-Host "  Lemonade not found at $lemonadeExe" -ForegroundColor Red
+        Write-Host "  Install Lemonade from https://lemonade-server.ai" -ForegroundColor Yellow
+        return $false
+    }
+    Write-Host "  Starting Lemonade..." -ForegroundColor Yellow
+    Start-Process $lemonadeExe -WindowStyle Minimized
+    for ($i = 0; $i -lt 30; $i++) {
+        Start-Sleep -Seconds 1
+        $h = Test-LemonadeHealth
+        if ($h) {
+            Write-Host "  Lemonade started." -ForegroundColor Green
+            return $true
+        }
+    }
+    Write-Host "  WARNING: Lemonade did not start within 30s." -ForegroundColor Red
+    return $false
+}
+
+# --- Ensure Lemonade is running ---
 $health = Test-LemonadeHealth
 if (-not $health) {
-    if (Test-Path $lemonadeExe) {
-        Write-Host "  Lemonade not running. Starting..." -ForegroundColor Yellow
-        Start-Process $lemonadeExe -WindowStyle Minimized
-        for ($i = 0; $i -lt 30; $i++) {
-            Start-Sleep -Seconds 1
-            $health = Test-LemonadeHealth
-            if ($health) { break }
-        }
-        if ($health) {
-            Write-Host "  Lemonade started." -ForegroundColor Green
-        } else {
-            Write-Host "  WARNING: Lemonade did not start within 30s." -ForegroundColor Red
-            Write-Host "  Start it manually and load $requiredModel with ctx_size $requiredContext." -ForegroundColor Yellow
-        }
-    } else {
-        Write-Host "  Lemonade not found at $lemonadeExe" -ForegroundColor Red
-        Write-Host "  Install Lemonade from https://lemonade-server.ai and load $requiredModel" -ForegroundColor Yellow
+    if (Start-LemonadeAndWait) {
+        $health = Test-LemonadeHealth
     }
 }
 
-if ($health) {
-    # --- Forge model (Qwen3.6-27B) ---
-    $loadedModel = $health.model_loaded
-    if ($loadedModel -eq $requiredModel) {
-        Write-Host "  Forge: $requiredModel already loaded." -ForegroundColor Green
-        $lemonadeOk = $true
+if (-not $health) {
+    Write-Host "  Lemonade is not available. Skipping model setup." -ForegroundColor Red
+    Write-Host "  Start Lemonade manually, then run install.ps1 again." -ForegroundColor Yellow
+} else {
+    # --- Ensure max_loaded_models >= 2 (required for Forge + Sift) ---
+    $maxLlm = $health.max_models.llm
+    if ($maxLlm -lt 2) {
+        Write-Host "  Lemonade max_loaded_models is $maxLlm - updating to 2..." -ForegroundColor Yellow
+
+        if (Test-Path $lemonadeCli) {
+            & $lemonadeCli config set max_loaded_models=2 2>&1 | Out-Null
+            Write-Host "  Config updated. Restarting Lemonade..." -ForegroundColor Yellow
+        } else {
+            Write-Host "  WARNING: lemonade CLI not found, cannot set config." -ForegroundColor Red
+            Write-Host "  Open Lemonade settings and set max loaded models to 2." -ForegroundColor Yellow
+        }
+
+        # Stop Lemonade
+        Get-Process LemonadeServer -ErrorAction SilentlyContinue | Stop-Process -Force
+        Get-Process lemonade-app -ErrorAction SilentlyContinue | Stop-Process -Force
+        Start-Sleep -Seconds 3
+
+        # Restart
+        if (-not (Start-LemonadeAndWait)) {
+            Write-Host "  Could not restart Lemonade after config change." -ForegroundColor Red
+        }
+        $health = Test-LemonadeHealth
     } else {
-        Write-Host "  Loading Forge model: $requiredModel (ctx_size: $requiredContext)..." -ForegroundColor Yellow
-        try {
-            $loadResp = Invoke-RestMethod -Uri "$lemonadeUrl/v1/load" -Method POST `
-                -ContentType "application/json" `
-                -Body (@{
-                    model_name = $requiredModel
-                    ctx_size = $requiredContext
-                    save_options = $true
-                } | ConvertTo-Json) `
-                -TimeoutSec 300 -ErrorAction Stop
-            Write-Host "  Forge model loaded. $($loadResp.message)" -ForegroundColor Green
+        Write-Host "  Lemonade max_loaded_models already $maxLlm (good)." -ForegroundColor Green
+    }
+
+    if ($health) {
+        # --- Forge model (Qwen3.6-27B) ---
+        $loadedIds = @()
+        if ($health.all_models_loaded) {
+            $loadedIds = @($health.all_models_loaded | ForEach-Object { $_.id })
+        }
+
+        if ($loadedIds -contains $requiredModel) {
+            Write-Host "  Forge: $requiredModel already loaded." -ForegroundColor Green
             $lemonadeOk = $true
-        } catch {
-            Write-Host "  WARNING: Failed to load Forge model - $($_.Exception.Message)" -ForegroundColor Red
+        } else {
+            Write-Host "  Loading Forge model: $requiredModel (ctx_size: $requiredContext)..." -ForegroundColor Yellow
+            try {
+                $loadResp = Invoke-RestMethod -Uri "$lemonadeUrl/v1/load" -Method POST `
+                    -ContentType "application/json" `
+                    -Body (@{
+                        model_name = $requiredModel
+                        ctx_size = $requiredContext
+                        save_options = $true
+                    } | ConvertTo-Json) `
+                    -TimeoutSec 300 -ErrorAction Stop
+                Write-Host "  Forge model loaded. $($loadResp.message)" -ForegroundColor Green
+                $lemonadeOk = $true
+            } catch {
+                Write-Host "  WARNING: Failed to load Forge model - $($_.Exception.Message)" -ForegroundColor Red
+            }
         }
-    }
 
-    # --- Sift model (Gemma 4 E4B) ---
-    $siftModel = "user.gemma-4-E4B-it-GGUF"
-    $siftCheckpoint = "unsloth/gemma-4-E4B-it-GGUF:UD-Q4_K_XL"
-    $siftContext = 32768
+        # --- Sift model (Gemma 4 E4B) ---
+        # Check if Sift model is registered (may need download)
+        $models = (Invoke-RestMethod -Uri "$lemonadeUrl/api/v1/models" -TimeoutSec 5).data
+        $siftRegistered = $models | Where-Object { $_.id -eq $siftModel }
 
-    # Check if Sift model is registered
-    $models = (Invoke-RestMethod -Uri "$lemonadeUrl/api/v1/models" -TimeoutSec 5).data
-    $siftRegistered = $models | Where-Object { $_.id -eq $siftModel }
-
-    if (-not $siftRegistered) {
-        Write-Host "  Downloading Sift model ($siftModel)... this may take a few minutes." -ForegroundColor Yellow
-        try {
-            Invoke-RestMethod -Uri "$lemonadeUrl/v1/pull" -Method POST `
-                -ContentType "application/json" `
-                -Body (@{
-                    model_name = $siftModel
-                    checkpoint = $siftCheckpoint
-                    recipe = "llamacpp"
-                } | ConvertTo-Json) `
-                -TimeoutSec 600 -ErrorAction Stop | Out-Null
-            Write-Host "  Sift model downloaded." -ForegroundColor Green
-        } catch {
-            Write-Host "  WARNING: Failed to download Sift model - $($_.Exception.Message)" -ForegroundColor Red
+        if (-not $siftRegistered) {
+            Write-Host "  Downloading Sift model ($siftModel)... this may take a few minutes." -ForegroundColor Yellow
+            try {
+                Invoke-RestMethod -Uri "$lemonadeUrl/v1/pull" -Method POST `
+                    -ContentType "application/json" `
+                    -Body (@{
+                        model_name = $siftModel
+                        checkpoint = $siftCheckpoint
+                        recipe = "llamacpp"
+                    } | ConvertTo-Json) `
+                    -TimeoutSec 600 -ErrorAction Stop | Out-Null
+                Write-Host "  Sift model downloaded." -ForegroundColor Green
+            } catch {
+                Write-Host "  WARNING: Failed to download Sift model - $($_.Exception.Message)" -ForegroundColor Red
+            }
         }
-    }
 
-    # Load Sift model (Lemonade supports 2 LLMs simultaneously)
-    Write-Host "  Loading Sift model: $siftModel (ctx_size: $siftContext)..." -ForegroundColor Yellow
-    try {
-        Invoke-RestMethod -Uri "$lemonadeUrl/v1/load" -Method POST `
-            -ContentType "application/json" `
-            -Body (@{
-                model_name = $siftModel
-                ctx_size = $siftContext
-                save_options = $true
-            } | ConvertTo-Json) `
-            -TimeoutSec 120 -ErrorAction Stop | Out-Null
-        Write-Host "  Sift model loaded. Two models active (Forge + Sift)." -ForegroundColor Green
-    } catch {
-        Write-Host "  WARNING: Failed to load Sift model - $($_.Exception.Message)" -ForegroundColor Red
-        Write-Host "  Sift will fall back to sharing the Forge model." -ForegroundColor Yellow
+        # Refresh loaded list
+        $health2 = Test-LemonadeHealth
+        $loadedIds2 = @()
+        if ($health2 -and $health2.all_models_loaded) {
+            $loadedIds2 = @($health2.all_models_loaded | ForEach-Object { $_.id })
+        }
+
+        if ($loadedIds2 -contains $siftModel) {
+            Write-Host "  Sift: $siftModel already loaded." -ForegroundColor Green
+        } else {
+            Write-Host "  Loading Sift model: $siftModel (ctx_size: $siftContext)..." -ForegroundColor Yellow
+            try {
+                Invoke-RestMethod -Uri "$lemonadeUrl/v1/load" -Method POST `
+                    -ContentType "application/json" `
+                    -Body (@{
+                        model_name = $siftModel
+                        ctx_size = $siftContext
+                        save_options = $true
+                    } | ConvertTo-Json) `
+                    -TimeoutSec 120 -ErrorAction Stop | Out-Null
+                Write-Host "  Sift model loaded." -ForegroundColor Green
+            } catch {
+                Write-Host "  WARNING: Failed to load Sift model - $($_.Exception.Message)" -ForegroundColor Red
+                Write-Host "  Sift will fall back to sharing the Forge model." -ForegroundColor Yellow
+            }
+        }
+
+        # Final check - verify both models are loaded
+        $finalHealth = Test-LemonadeHealth
+        if ($finalHealth -and $finalHealth.all_models_loaded) {
+            $finalLoaded = @($finalHealth.all_models_loaded | ForEach-Object { $_.id })
+            $forgeUp = $finalLoaded -contains $requiredModel
+            $siftUp = $finalLoaded -contains $siftModel
+            if ($forgeUp -and $siftUp) {
+                Write-Host "  Both models active: Forge ($requiredModel) + Sift ($siftModel)" -ForegroundColor Green
+            } elseif ($forgeUp) {
+                Write-Host "  Forge loaded, Sift not loaded (research will share Forge model)." -ForegroundColor Yellow
+            } elseif ($siftUp) {
+                Write-Host "  WARNING: Only Sift loaded - Forge model missing. Coding will use wrong model." -ForegroundColor Red
+            }
+        }
     }
 }
 

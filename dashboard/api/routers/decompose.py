@@ -60,12 +60,28 @@ def _resolve_decomp_model(project: dict | None = None) -> tuple[str, str, str]:
         if not base_url.rstrip('/').endswith('/v1'):
             base_url = base_url.rstrip('/') + '/v1'
         # Auto-detect model from Lemonade if not explicitly set
+        # Prefer the larger coding model (Forge) over Sift for decomposition
         if not model_id:
             try:
                 health_url = raw_url.rstrip('/') + '/api/v1/health'
                 resp = httpx.get(health_url, timeout=5.0)
                 if resp.status_code == 200:
-                    model_id = resp.json().get("model_loaded", "")
+                    health_data = resp.json()
+                    all_loaded = health_data.get("all_models_loaded", [])
+                    if all_loaded:
+                        # Prefer non-Sift model (Sift models contain 'gemma' or 'E4B')
+                        sift_keywords = ["gemma", "e4b", "sift"]
+                        for m in all_loaded:
+                            mid = (m.get("id") or "").lower()
+                            if not any(kw in mid for kw in sift_keywords):
+                                model_id = m.get("id", "")
+                                break
+                        # If all models look like Sift, just use the first one
+                        if not model_id and all_loaded:
+                            model_id = all_loaded[0].get("id", "")
+                    # Fallback to model_loaded (single model case)
+                    if not model_id:
+                        model_id = health_data.get("model_loaded", "")
             except Exception:
                 pass
         return base_url, model_id, ""
