@@ -129,7 +129,7 @@ if (-not $KeepFiles) {
         }
     }
 } else {
-    Write-Host "[3/3] Keeping files (--KeepFiles)." -ForegroundColor Yellow
+    Write-Host '[3/3] Keeping files (-KeepFiles).' -ForegroundColor Yellow
 }
 
 # ---------------------------------------------------------------------------
