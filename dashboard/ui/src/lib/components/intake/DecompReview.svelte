@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, afterUpdate } from 'svelte';
 
   export let slug: string;
   export let disabled: boolean = false;
@@ -28,9 +28,21 @@
   let decomposing = false;
   let committing = false;
   let error = '';
+  let streamingTickets: Ticket[] = [];
 
-  // Group tickets by gate
-  $: gateGroups = plan ? groupByGate(plan.tickets) : [];
+  // Group tickets by gate — use streaming tickets during decompose, plan tickets after
+  $: displayTickets = plan ? plan.tickets : streamingTickets;
+  $: gateGroups = displayTickets.length > 0 ? groupByGate(displayTickets) : [];
+  $: ticketCount = displayTickets.length;
+
+  let gateListEl: HTMLDivElement;
+
+  afterUpdate(() => {
+    // Auto-scroll to bottom when new tickets arrive during streaming
+    if (decomposing && gateListEl) {
+      gateListEl.scrollTop = gateListEl.scrollHeight;
+    }
+  });
 
   function groupByGate(tickets: Ticket[]): { gate: number; tickets: Ticket[] }[] {
     const groups = new Map<number, Ticket[]>();
@@ -48,6 +60,7 @@
     decomposing = true;
     error = '';
     plan = null;
+    streamingTickets = [];
 
     try {
       const resp = await fetch(`/api/projects/${slug}/decompose`, {
@@ -57,8 +70,56 @@
         const data = await resp.json().catch(() => ({ detail: resp.statusText }));
         throw new Error(data.detail || `HTTP ${resp.status}`);
       }
-      const data = await resp.json();
-      plan = data.plan;
+
+      // Read SSE stream
+      const reader = resp.body?.getReader();
+      if (!reader) throw new Error('No response body');
+      const decoder = new TextDecoder();
+      let buf = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+
+        // Parse SSE events from buffer
+        const parts = buf.split('\n\n');
+        buf = parts.pop() ?? '';  // Keep incomplete last part
+
+        for (const part of parts) {
+          const lines = part.split('\n');
+          let eventType = '';
+          let eventData = '';
+          for (const line of lines) {
+            if (line.startsWith('event: ')) eventType = line.slice(7);
+            else if (line.startsWith('data: ')) eventData = line.slice(6);
+          }
+          if (!eventType || !eventData) continue;
+
+          if (eventType === 'ticket') {
+            try {
+              const ticket: Ticket = JSON.parse(eventData);
+              streamingTickets = [...streamingTickets, ticket];
+            } catch { /* skip malformed */ }
+          } else if (eventType === 'plan') {
+            try {
+              plan = JSON.parse(eventData);
+            } catch { /* skip */ }
+          } else if (eventType === 'error') {
+            try {
+              const errData = JSON.parse(eventData);
+              error = errData.detail || 'Decomposition failed';
+            } catch {
+              error = 'Decomposition failed';
+            }
+          }
+          // 'done' event — just let the loop end
+        }
+      }
+
+      if (!plan && streamingTickets.length === 0 && !error) {
+        error = 'No tickets generated';
+      }
       if (plan && plan.errors?.length) {
         error = `Warnings: ${plan.errors.join('; ')}`;
       }
@@ -117,23 +178,32 @@
     </button>
   {/if}
 
-  <!-- Decomposing spinner -->
+  <!-- Decomposing spinner + live ticket count -->
   {#if decomposing}
     <div class="decomp-loading">
       <span class="spinner"></span>
-      <span>Analyzing PRD and generating tickets...</span>
+      <span>
+        {#if streamingTickets.length > 0}
+          Generating tickets… <strong class="ticket-counter">{streamingTickets.length}</strong> found
+        {:else}
+          Analyzing PRD and generating tickets…
+        {/if}
+      </span>
     </div>
   {/if}
 
-  <!-- Plan review -->
-  {#if plan && plan.tickets.length > 0}
+  <!-- Plan review (or live streaming preview) -->
+  {#if (plan && plan.tickets.length > 0) || (decomposing && streamingTickets.length > 0)}
     <div class="plan-summary">
-      <span class="summary-stat">{plan.total_tickets} tickets</span>
+      <span class="summary-stat">{ticketCount} ticket{ticketCount !== 1 ? 's' : ''}</span>
       <span class="summary-dot">·</span>
-      <span class="summary-stat">{plan.gate_count} phases</span>
+      <span class="summary-stat">{gateGroups.length} phase{gateGroups.length !== 1 ? 's' : ''}</span>
+      {#if decomposing}
+        <span class="summary-live">LIVE</span>
+      {/if}
     </div>
 
-    <div class="gate-list">
+    <div class="gate-list" bind:this={gateListEl}>
       {#each gateGroups as group}
         <div class="gate-group">
           <h3 class="gate-header">Phase {group.gate}</h3>
@@ -161,22 +231,24 @@
       {/each}
     </div>
 
-    <div class="plan-actions">
-      <button
-        class="btn-approve"
-        on:click={commitPlan}
-        disabled={committing || disabled}
-      >
-        {committing ? 'Committing...' : `Approve & Create ${plan.total_tickets} Tickets`}
-      </button>
-      <button
-        class="btn-retry"
-        on:click={decompose}
-        disabled={decomposing || disabled}
-      >
-        Re-decompose
-      </button>
-    </div>
+    {#if plan && !decomposing}
+      <div class="plan-actions">
+        <button
+          class="btn-approve"
+          on:click={commitPlan}
+          disabled={committing || disabled}
+        >
+          {committing ? 'Committing...' : `Approve & Create ${plan.total_tickets} Tickets`}
+        </button>
+        <button
+          class="btn-retry"
+          on:click={decompose}
+          disabled={decomposing || disabled}
+        >
+          Re-decompose
+        </button>
+      </div>
+    {/if}
   {/if}
 </section>
 
@@ -257,6 +329,28 @@
 
   @keyframes spin {
     to { transform: rotate(360deg); }
+  }
+
+  .ticket-counter {
+    color: var(--color-accent-primary, #3ABEFF);
+    font-size: 1.1em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .summary-live {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(58, 190, 255, 0.15);
+    color: var(--color-accent-primary, #3ABEFF);
+    animation: pulse-live 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-live {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
   }
 
   /* Decompose button */

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import sqlite3
 import sys
 from pathlib import Path
@@ -16,6 +17,7 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from ..services.config_loader import get_config
@@ -106,6 +108,112 @@ def _make_llm_fn(base_url: str, model_id: str, api_key: str):
     return llm_fn
 
 
+def _make_streaming_llm(base_url: str, model_id: str, api_key: str):
+    """Create a streaming LLM generator that yields text chunks."""
+    def stream_fn(system_prompt: str, user_prompt: str):
+        url = f"{base_url.rstrip('/')}/chat/completions"
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        payload = {
+            "model": model_id,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": 0.3,
+            "max_tokens": 8192,
+            "stream": True,
+        }
+
+        with httpx.stream("POST", url, json=payload, headers=headers, timeout=180.0) as resp:
+            if resp.status_code != 200:
+                raise RuntimeError(f"LLM returned {resp.status_code}")
+            for line in resp.iter_lines():
+                if not line.startswith("data: "):
+                    continue
+                data = line[6:]
+                if data.strip() == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(data)
+                    delta = chunk.get("choices", [{}])[0].get("delta", {})
+                    text = delta.get("content", "")
+                    if text:
+                        yield text
+                except (json.JSONDecodeError, IndexError, KeyError):
+                    continue
+    return stream_fn
+
+
+def _extract_tickets_incrementally(text_stream, slug: str):
+    """Parse a streaming JSON array of ticket objects, yielding each complete ticket."""
+    buffer = ""
+    brace_depth = 0
+    in_string = False
+    escape_next = False
+    obj_start = -1
+    found_array = False
+
+    for chunk in text_stream:
+        buffer += chunk
+        # Process new characters
+        i = max(0, len(buffer) - len(chunk))
+        while i < len(buffer):
+            c = buffer[i]
+            if escape_next:
+                escape_next = False
+                i += 1
+                continue
+            if c == '\\' and in_string:
+                escape_next = True
+                i += 1
+                continue
+            if c == '"':
+                in_string = not in_string
+                i += 1
+                continue
+            if in_string:
+                i += 1
+                continue
+            # Outside strings
+            if c == '[' and not found_array:
+                found_array = True
+            elif c == '{':
+                if brace_depth == 0:
+                    obj_start = i
+                brace_depth += 1
+            elif c == '}':
+                brace_depth -= 1
+                if brace_depth == 0 and obj_start >= 0:
+                    obj_text = buffer[obj_start:i + 1]
+                    try:
+                        item = json.loads(obj_text)
+                        from scripts.decompose import TicketSpec
+                        ticket = TicketSpec(
+                            id=item.get("id", ""),
+                            gate=int(item.get("gate", 0)),
+                            description=item.get("description", item.get("objective", "")),
+                            required_output_files=item.get("required_output_files", item.get("files", [])),
+                            depends_on=item.get("depends_on", []),
+                            parent_id=item.get("parent_id", item.get("parent", None)),
+                            interaction_spec=item.get("interaction_spec", ""),
+                            constraints=item.get("constraints", []),
+                            context_files=item.get("context_files", []),
+                            worker_done_criteria=item.get("worker_done_criteria", "Files exist and are non-empty"),
+                            qa_done_criteria=item.get("qa_done_criteria", "All checks pass"),
+                            qa_cmd=item.get("qa_cmd", []),
+                            requires_live_review=bool(item.get("requires_live_review", False)),
+                            is_parent=bool(item.get("is_parent", False)),
+                        )
+                        yield ticket
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+                    obj_start = -1
+            i += 1
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -176,7 +284,8 @@ def _plan_cache_path(slug: str) -> Path:
 def decompose_project(slug: str):
     """
     Generate a ticket plan from the project's PRD + Q&A summary.
-    Returns the plan for human review — does NOT commit to DB.
+    Returns SSE stream of tickets as they are parsed, then a final plan event.
+    Falls back to non-streaming JSON if Accept header doesn't include event-stream.
     """
     project = get_project(slug)
     if project is None:
@@ -195,38 +304,52 @@ def decompose_project(slug: str):
             detail="No decomposition model configured. Set a model in AI Configuration.",
         )
 
-    # Import decompose functions
-    from scripts.decompose import generate_decomp_plan
+    from scripts.decompose import (
+        generate_decomp_plan, DecompPlan, _build_system_prompt, _build_user_prompt,
+    )
 
-    # Build architecture text from Q&A summary
     arch_text = qa_summary if qa_summary else ""
 
-    # Create LLM callback
-    llm_fn = _make_llm_fn(base_url, model_id, api_key)
+    # --- SSE streaming path ---
+    def _stream_decompose():
+        from scripts.decompose import TicketSpec
+        system_prompt = _build_system_prompt(slug, project.get("tech_stack", ""))
+        user_prompt = _build_user_prompt(prd_text, arch_text, "", slug)
+        stream_fn = _make_streaming_llm(base_url, model_id, api_key)
 
-    # Generate plan
-    try:
-        plan = generate_decomp_plan(
-            prd_text=prd_text,
-            architecture_text=arch_text,
-            project_slug=slug,
-            tech_stack=project.get("tech_stack", ""),
-            llm_fn=llm_fn,
+        tickets: list[TicketSpec] = []
+        try:
+            for ticket in _extract_tickets_incrementally(stream_fn(system_prompt, user_prompt), slug):
+                tickets.append(ticket)
+                yield f"event: ticket\ndata: {json.dumps(ticket.to_dict())}\n\n"
+        except Exception as e:
+            log.exception("Streaming decomposition failed for '%s'", slug)
+            yield f"event: error\ndata: {json.dumps({'detail': str(e)})}\n\n"
+            return
+
+        # Build final plan
+        gates = {t.gate for t in tickets}
+        plan = DecompPlan(
+            tickets=tickets,
+            total_tickets=len(tickets),
+            gate_count=len(gates),
+            parent_count=sum(1 for t in tickets if t.is_parent),
+            child_count=sum(1 for t in tickets if t.parent_id),
         )
-    except Exception as e:
-        log.exception("Decomposition failed for project '%s'", slug)
-        raise HTTPException(status_code=502, detail=f"Decomposition failed: {e}")
+        plan_dict = plan.to_dict()
 
-    plan_dict = plan.to_dict()
+        # Cache for later commit
+        cache_path = _plan_cache_path(slug)
+        cache_path.write_text(json.dumps(plan_dict, indent=2), encoding="utf-8")
 
-    # Cache the plan for later commit
-    cache_path = _plan_cache_path(slug)
-    cache_path.write_text(json.dumps(plan_dict, indent=2), encoding="utf-8")
+        yield f"event: plan\ndata: {json.dumps(plan_dict)}\n\n"
+        yield "event: done\ndata: {}\n\n"
 
-    return {
-        "plan": plan_dict,
-        "cached": True,
-    }
+    return StreamingResponse(
+        _stream_decompose(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("/{slug}/decompose/commit")
