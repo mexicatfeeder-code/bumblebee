@@ -8,8 +8,8 @@
   "checks_dir": "./output/checks",
   "forge_agent": "forge",
   "models": {
-    "forge": "Qwen3-Coder-30B-A3B-Instruct-GGUF",
-    "vision": "Qwen3-Coder-30B-A3B-Instruct-GGUF"
+    "forge": "Qwen3.6-27B-GGUF",
+    "vision": "Qwen3.6-27B-GGUF"
   },
   "forge_timeout_seconds": 600,
   "cycle_interval_seconds": 2,
