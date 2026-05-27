@@ -51,22 +51,21 @@ if (-not $bumblebeeRoot) {
     $bumblebeeRoot = (Get-Location).Path
 }
 
-# Kill ALL python processes to release file locks
-$pyProcs = Get-Process python -ErrorAction SilentlyContinue
-if ($pyProcs) {
-    $pyProcs | Stop-Process -Force -ErrorAction SilentlyContinue
-    Write-Host "  Stopped $($pyProcs.Count) Python process(es)." -ForegroundColor Green
+# Kill only bumblebee-related python processes (uvicorn dashboard, executor, research)
+# Do NOT kill all python/node - other services (OpenClaw node, Lemonade) may be running
+$killed = 0
+Get-CimInstance Win32_Process -Filter "name='python.exe' OR name='python3.exe'" -ErrorAction SilentlyContinue | ForEach-Object {
+    $cmd = $_.CommandLine
+    if ($cmd -and ($cmd -match 'bumblebee|uvicorn|executor|research_executor')) {
+        Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+        $killed++
+    }
+}
+if ($killed -gt 0) {
+    Write-Host "  Stopped $killed bumblebee Python process(es)." -ForegroundColor Green
     Start-Sleep -Seconds 2
 } else {
-    Write-Host "  No Python processes running." -ForegroundColor Yellow
-}
-
-# Also kill any node processes that might hold locks
-$nodeProcs = Get-Process node -ErrorAction SilentlyContinue
-if ($nodeProcs) {
-    $nodeProcs | Stop-Process -Force -ErrorAction SilentlyContinue
-    Write-Host "  Stopped $($nodeProcs.Count) Node process(es)." -ForegroundColor Green
-    Start-Sleep -Seconds 1
+    Write-Host "  No bumblebee Python processes running." -ForegroundColor Yellow
 }
 
 # ---------------------------------------------------------------------------
@@ -99,6 +98,23 @@ if (-not $KeepFiles) {
         Set-Location $env:USERPROFILE
     }
 
+    # First, nuke node_modules separately (Windows long-path problem)
+    $nmDir = Join-Path $bumblebeeRoot "dashboard\ui\node_modules"
+    if (Test-Path $nmDir) {
+        Write-Host "  Cleaning node_modules (long paths)..." -ForegroundColor Yellow
+        $emptyNm = Join-Path $env:TEMP "bb-empty-nm-$(Get-Random)"
+        New-Item -ItemType Directory -Path $emptyNm -Force | Out-Null
+        robocopy $emptyNm $nmDir /MIR /NFL /NDL /NJH /NJS /nc /ns /np 2>&1 | Out-Null
+        Remove-Item $nmDir -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item $emptyNm -Force -ErrorAction SilentlyContinue
+    }
+
+    # Close any git lock files
+    $gitLock = Join-Path $bumblebeeRoot ".git\index.lock"
+    if (Test-Path $gitLock) {
+        Remove-Item $gitLock -Force -ErrorAction SilentlyContinue
+    }
+
     $removed = $false
     for ($i = 1; $i -le 3; $i++) {
         try {
@@ -115,8 +131,7 @@ if (-not $KeepFiles) {
     if ($removed) {
         Write-Host "  Removed $bumblebeeRoot" -ForegroundColor Green
     } else {
-        Write-Host "  Could not fully remove directory. Trying robocopy cleanup..." -ForegroundColor Yellow
-        # Create empty temp dir and mirror it over the target to force-delete
+        Write-Host "  Trying robocopy cleanup..." -ForegroundColor Yellow
         $emptyDir = Join-Path $env:TEMP "bumblebee-empty-$(Get-Random)"
         New-Item -ItemType Directory -Path $emptyDir -Force | Out-Null
         robocopy $emptyDir $bumblebeeRoot /MIR /NFL /NDL /NJH /NJS /nc /ns /np 2>&1 | Out-Null
