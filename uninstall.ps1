@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Bumblebee Uninstaller — Clean removal
+    Bumblebee Uninstaller - Clean removal
 .DESCRIPTION
     Stops the dashboard, removes the scheduled task, and optionally
     deletes the bumblebee directory.
@@ -107,7 +107,7 @@ if (-not $KeepFiles) {
             break
         } catch {
             if ($i -lt 3) {
-                Write-Host "  Retry $i/3 — waiting for file locks to release..." -ForegroundColor Yellow
+                Write-Host "  Retry $i/3 - waiting for file locks to release..." -ForegroundColor Yellow
                 Start-Sleep -Seconds 3
             }
         }

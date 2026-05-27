@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Bumblebee Conference Demo — One-click launcher
+    Bumblebee Conference Demo - One-click launcher
 .DESCRIPTION
     Resets the demo project DB to a partial state, starts the dashboard,
     and kicks off the executor for a live coding demo.
@@ -31,7 +31,7 @@ $root = Split-Path $MyInvocation.MyCommand.Path -Parent
 
 Write-Host ""
 Write-Host "  ====================================" -ForegroundColor Yellow
-Write-Host "    Bumblebee — Conference Demo" -ForegroundColor Yellow
+Write-Host "    Bumblebee - Conference Demo" -ForegroundColor Yellow
 Write-Host "  ====================================" -ForegroundColor Yellow
 Write-Host ""
 
@@ -154,7 +154,7 @@ if (-not $SkipDashboard) {
     $existing = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue | 
         Where-Object { $_.State -eq 'Listen' }
     if ($existing) {
-        Write-Host "  Port $Port already in use — dashboard may be running." -ForegroundColor Yellow
+        Write-Host "  Port $Port already in use - dashboard may be running." -ForegroundColor Yellow
         Write-Host "  Skipping dashboard start. Kill it first if you want a fresh one." -ForegroundColor Yellow
     } else {
         $dashStart = Join-Path $root "dashboard\start.ps1"
