@@ -288,14 +288,15 @@ Tech stack: {tech_stack or "Determine from PRD/Q&A summary"}
 
 1. **IDs**: `{slug_upper}-P<gate>-<3-digit-seq>` (e.g. {slug_upper}-P0-001, {slug_upper}-P1-003)
 2. **Gates**: Use 3-5 gates. Gate 0 = foundation (types, DB, shared components, API skeleton). Gate 1+ = features.
-3. **required_output_files**: MANDATORY for every ticket. Exact relative paths. 1-8 files per ticket.
+3. **required_output_files**: MANDATORY for every ticket. Exact relative paths. **1-3 files per ticket maximum.** Split larger work into multiple tickets. More small tickets is always better than fewer large ones.
 4. **depends_on**: Reference ticket IDs from earlier gates when the ticket needs those files.
 5. **context_files**: List files from earlier tickets that Forge should READ to understand the codebase. Critical for consistency.
 6. **constraints**: Inline specific patterns Forge must follow (e.g. "Use `router.get()` not `app.get()`", "Import Button from '../ui/Button'"). Forge hallucinates APIs without these.
 7. **worker_done_criteria**: Be specific. Not "files exist" but "file exports MenuBrowse component that fetches from /api/menu and renders items grouped by category".
 8. **No orphan tickets**: Every gate 1+ ticket should depend_on at least one gate 0 ticket and list context_files.
-9. **Backend + Frontend together**: If a feature needs both an API endpoint and a UI page, they can be in the same ticket (up to 8 files) or split with explicit deps.
+9. **Split backend and frontend**: API endpoints and UI pages should be separate tickets with explicit deps between them.
 10. **WebSocket/real-time**: If the PRD requires real-time updates, include the WebSocket server setup in gate 0 and client hooks in the relevant feature gate.
+11. **Aim for 15-30 tickets** for a typical app. Each ticket is one focused task that produces 1-3 files.
 
 ## OUTPUT
 
