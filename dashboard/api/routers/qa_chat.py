@@ -156,13 +156,15 @@ def _resolve_qa_model(project: dict | None = None) -> tuple[str, str, str]:
 
     if source == "lemonade":
         base_url = config.get("lemonadeUrl") or ai.get("lemonade_url", DEFAULT_LEMONADE_URL)
+        raw_url = base_url  # before /v1 suffix
         # Ensure /v1 suffix for OpenAI-compatible endpoint
         if not base_url.rstrip('/').endswith('/v1'):
             base_url = base_url.rstrip('/') + '/v1'
         # Auto-detect model from Lemonade if not explicitly set
         if not model_id:
             try:
-                resp = httpx.get(f"{base_url.rstrip('/')}/api/v1/health", timeout=5.0)
+                health_url = raw_url.rstrip('/') + '/api/v1/health'
+                resp = httpx.get(health_url, timeout=5.0)
                 if resp.status_code == 200:
                     model_id = resp.json().get("model_loaded", "")
             except Exception:
