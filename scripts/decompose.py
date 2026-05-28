@@ -287,7 +287,7 @@ Tech stack: {tech_stack or "Determine from PRD/Q&A summary"}
 
 1. **IDs**: `{slug_upper}-P<gate>-<3-digit-seq>` (e.g. {slug_upper}-P0-001, {slug_upper}-P1-003)
 2. **Gates**: Use 3-5 gates. Gate 0 = foundation (types, DB, shared components, API skeleton). Gate 1+ = features.
-3. **required_output_files**: MANDATORY for every ticket. Exact relative paths. **1-3 files per ticket maximum. NO EXCEPTIONS, including foundation/setup tickets.** Split larger work into multiple tickets. A 13-file setup must become 5-6 separate tickets. More small tickets is always better than fewer large ones.
+3. **required_output_files**: MANDATORY for every ticket. Exact relative paths. **1 file per ticket is ideal, 2 files maximum. NO EXCEPTIONS.** Split larger work into multiple tickets. A page with a form component = 2 tickets. CRUD with 4 operations = split into list+create and update+delete tickets. More small tickets is always better than fewer large ones. Each ticket should produce under 200 lines of code. If a page has complex state, forms, real-time updates, or multiple sub-features, split it.
 4. **depends_on**: Reference ticket IDs from earlier gates when the ticket needs those files.
 5. **context_files**: List files from earlier tickets that Forge should READ to understand the codebase. Critical for consistency.
 6. **constraints**: Inline specific patterns Forge must follow (e.g. "Use `router.get()` not `app.get()`", "Import Button from '../ui/Button'"). Forge hallucinates APIs without these.
@@ -295,7 +295,7 @@ Tech stack: {tech_stack or "Determine from PRD/Q&A summary"}
 8. **No orphan tickets**: Every gate 1+ ticket should depend_on at least one gate 0 ticket and list context_files.
 9. **Split backend and frontend**: API endpoints and UI pages should be separate tickets with explicit deps between them.
 10. **WebSocket/real-time**: If the PRD requires real-time updates, include the WebSocket server setup in gate 0 and client hooks in the relevant feature gate.
-11. **Aim for 15-30 tickets** for a typical app. Each ticket is one focused task that produces 1-3 files.
+11. **Aim for 20-40 tickets** for a typical app. Each ticket is one focused task that produces 1-2 files and under 200 lines. Prefer more granular tickets over fewer heavy ones -- the coding agent works best with small, focused tasks that complete in under 5 minutes.
 
 ## OUTPUT
 

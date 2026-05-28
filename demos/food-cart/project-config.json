@@ -12,7 +12,7 @@
     "vision": "Qwen3.6-27B-GGUF",
     "decomp": ""
   },
-  "forge_timeout_seconds": 600,
+  "forge_timeout_seconds": 1200,
   "cycle_interval_seconds": 2,
   "max_dispatch_attempts": 3,
   "tech_stack": "React 18 + TypeScript + Vite frontend, FastAPI Python backend, SQLite, Tailwind CSS",
