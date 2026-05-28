@@ -8,8 +8,8 @@
   "checks_dir": "C:\\Users\\rad_t\\.openclaw\\workspace\\bumblebee\\demos\\food-cart\\output\\checks",
   "forge_agent": "forge",
   "models": {
-    "forge": "Qwen3.6-27B-GGUF",
-    "vision": "Qwen3.6-27B-GGUF",
+    "forge": "Qwen3.6-35B-A3B-GGUF",
+    "vision": "Qwen3.6-35B-A3B-GGUF",
     "decomp": ""
   },
   "forge_timeout_seconds": 1200,

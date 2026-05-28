@@ -140,6 +140,7 @@ def direct_dispatch(
         "tool_choice": "required",
         "temperature": 0.2,
         "max_tokens": 8192,
+        "chat_template_kwargs": {"enable_thinking": False},
     }).encode("utf-8")
 
     req = urllib.request.Request(
