@@ -389,7 +389,7 @@
   .phase-row {
     display: flex;
     align-items: stretch;
-    gap: 0;
+    gap: 8px;
   }
 
   /* Row avatar */
@@ -398,17 +398,22 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding-right: 16px;
+    gap: 8px;
     flex-shrink: 0;
+    background: var(--color-bg-panel);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: var(--radius-panel);
+    padding: 16px 14px;
+    min-width: 80px;
+    align-self: stretch;
   }
 
   .avatar-img {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
     object-fit: cover;
-    border: 2px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
@@ -427,7 +432,7 @@
   .phase-arrow {
     display: flex;
     align-items: center;
-    padding: 0 8px;
+    padding: 0;
     color: var(--color-text-muted);
     opacity: 0.2;
     transition: opacity 0.4s ease;
