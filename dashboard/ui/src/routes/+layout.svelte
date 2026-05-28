@@ -7,6 +7,7 @@
   import { drawerOpen, drawerMode, closeDrawer } from '$lib/stores/drawer';
   import StatusBanner from '$lib/components/StatusBanner.svelte';
   import Drawer from '$lib/components/Drawer.svelte';
+  import DrawerProjectList from '$lib/components/DrawerProjectList.svelte';
   import IntakeView from '$lib/components/IntakeView.svelte';
   import ResearchIntakeView from '$lib/components/ResearchIntakeView.svelte';
 
@@ -35,6 +36,7 @@
     {#if mode === 'sift'}
       <ResearchIntakeView />
     {:else}
+      <DrawerProjectList />
       <IntakeView on:decompose-started={closeDrawer} />
     {/if}
   </Drawer>
