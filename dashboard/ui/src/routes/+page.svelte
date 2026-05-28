@@ -3,10 +3,11 @@
   import { ticketStore } from '$lib/stores/tickets';
   import { telemetry } from '$lib/stores/telemetry';
   import { projectsStore, selectedProject } from '$lib/stores/projects';
+  import { drawerOpen } from '$lib/stores/drawer';
   import PipelineView from '$lib/components/PipelineView.svelte';
 
-  // Auto-select first project if none selected
-  $: if (!$selectedProject && $projectsStore.projects.length > 0) {
+  // Auto-select first project if none selected (but not while drawer is open)
+  $: if (!$selectedProject && $projectsStore.projects.length > 0 && !$drawerOpen) {
     projectsStore.selectProject($projectsStore.projects[0].slug, 'dashboard');
   }
 
