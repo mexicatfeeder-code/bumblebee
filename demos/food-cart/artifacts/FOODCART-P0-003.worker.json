@@ -1,0 +1,26 @@
+{
+  "ticket": "FOODCART-P0-003",
+  "status": "completed",
+  "duration_s": 95.6,
+  "tool_calls": 1,
+  "files_written": [
+    "main.py"
+  ],
+  "guardrails": [
+    {
+      "check": "svelte_store_prefix",
+      "passed": true,
+      "note": "not a svelte file, skipped"
+    },
+    {
+      "check": "export_integrity",
+      "passed": true,
+      "note": "not a JS/TS/Svelte file, skipped"
+    },
+    {
+      "check": "diff_size",
+      "passed": true,
+      "note": "no diff (file unchanged)"
+    }
+  ]
+}

@@ -8,5 +8,6 @@
   "pixelProjectStart": null,
   "researchDbPath": "../research/research.db",
   "researchRoot": "../research",
-  "pixelSessionsPath": "C:\\Users\\rad_t\\.openclaw\\agents\\main\\sessions\\sessions.json"
+  "pixelSessionsPath": "C:\\Users\\rad_t\\.openclaw\\agents\\main\\sessions\\sessions.json",
+  "lemonadeLogPath": "C:\\Users\\rad_t\\AppData\\Local\\Temp\\lemonade-server.log"
 }

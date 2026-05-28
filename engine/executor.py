@@ -388,27 +388,36 @@ class Executor:
         count = 0
 
         # 1. todo → in_progress (deps satisfied, has requirements)
-        todos = self.conn.execute(
-            "SELECT id, depends_on, blocked_reason_code, assignee, failure_count, attempt_count "
-            "FROM tickets WHERE status='todo' ORDER BY gate ASC, id ASC"
-        ).fetchall()
-        for row in todos:
-            ticket = TicketState(
-                ticket_id=row["id"], status="todo",
-                blocked_reason_code=row["blocked_reason_code"],
-                assignee=row["assignee"],
-                failure_count=row["failure_count"] or 0,
-                attempt_count=row["attempt_count"] or 0,
-            )
-            try:
-                self.sm.transition(ticket, "in_progress", name="claim_ticket")
-                self.conn.execute(
-                    "UPDATE tickets SET status='in_progress', assignee='executor', updated_at=? WHERE id=?",
-                    (now_iso(), row["id"]),
+        #    Only route ONE at a time to avoid saturating Lemonade with concurrent requests.
+        already_in_progress = self.conn.execute(
+            "SELECT COUNT(*) as c FROM tickets WHERE status='in_progress'"
+        ).fetchone()["c"]
+        if already_in_progress > 0:
+            # Already have a ticket being dispatched -- don't pile on
+            pass
+        else:
+            todos = self.conn.execute(
+                "SELECT id, depends_on, blocked_reason_code, assignee, failure_count, attempt_count "
+                "FROM tickets WHERE status='todo' ORDER BY gate ASC, id ASC"
+            ).fetchall()
+            for row in todos:
+                ticket = TicketState(
+                    ticket_id=row["id"], status="todo",
+                    blocked_reason_code=row["blocked_reason_code"],
+                    assignee=row["assignee"],
+                    failure_count=row["failure_count"] or 0,
+                    attempt_count=row["attempt_count"] or 0,
                 )
-                count += 1
-            except InvalidTransition:
-                pass  # deps not satisfied or no requirements — skip this cycle
+                try:
+                    self.sm.transition(ticket, "in_progress", name="claim_ticket")
+                    self.conn.execute(
+                        "UPDATE tickets SET status='in_progress', assignee='executor', updated_at=? WHERE id=?",
+                        (now_iso(), row["id"]),
+                    )
+                    count += 1
+                    break  # Only route ONE ticket per cycle
+                except InvalidTransition:
+                    pass  # deps not satisfied or no requirements -- skip
 
         # 2. blocked → todo (retry eligible, children complete, etc.)
         blocked = self.conn.execute(
