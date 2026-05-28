@@ -2,17 +2,18 @@
   import { onMount } from 'svelte';
   import { ticketStore } from '$lib/stores/tickets';
   import { telemetry } from '$lib/stores/telemetry';
-  import { projectsStore, selectedProject, activeView } from '$lib/stores/projects';
+  import { projectsStore, selectedProject } from '$lib/stores/projects';
   import PipelineView from '$lib/components/PipelineView.svelte';
-  import ResearchIntakeView from '$lib/components/ResearchIntakeView.svelte';
-  import ResearchReportView from '$lib/components/ResearchReportView.svelte';
-  import CostComparison from '$lib/components/CostComparison.svelte';
-  import { selectedResearchId, researchView } from '$lib/stores/research';
+
+  // Auto-select first project if none selected
+  $: if (!$selectedProject && $projectsStore.projects.length > 0) {
+    projectsStore.selectProject($projectsStore.projects[0].slug, 'dashboard');
+  }
 
   // Connect ticket store to the selected project's DB
   let connectedSlug = '';
-  $: currentSlug = $selectedProject?.slug ?? 'dashboard';
-  $: if (currentSlug !== connectedSlug) {
+  $: currentSlug = $selectedProject?.slug ?? '';
+  $: if (currentSlug && currentSlug !== connectedSlug) {
     connectedSlug = currentSlug;
     ticketStore.connect(currentSlug);
   }
@@ -26,21 +27,8 @@
   });
 </script>
 
-{#if $selectedResearchId !== null}
-  {#if $researchView === 'report'}
-    <ResearchReportView ticketId={$selectedResearchId} />
-  {:else}
-    <ResearchIntakeView />
-  {/if}
-{:else if !$selectedResearchId && $researchView === 'intake' && !$selectedProject && $activeView !== 'intake'}
-  <ResearchIntakeView />
-{:else if $activeView === 'costs' && $selectedProject}
-  <CostComparison slug={$selectedProject.slug} />
-{:else}
-  <!-- Pipeline view — main dashboard content -->
-  <PipelineView
-    slug={$selectedProject?.slug ?? ''}
-    projectName={$selectedProject?.name ?? 'Agent Swarm'}
-    projectStatus={$selectedProject?.status ?? ''}
-  />
-{/if}
+<PipelineView
+  slug={$selectedProject?.slug ?? ''}
+  projectName={$selectedProject?.name ?? 'Agent Swarm'}
+  projectStatus={$selectedProject?.status ?? ''}
+/>

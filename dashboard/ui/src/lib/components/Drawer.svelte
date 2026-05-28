@@ -53,9 +53,9 @@
   .drawer-panel {
     position: fixed;
     top: 0;
-    left: 240px; /* Offset by sidebar width */
+    left: 0;
     bottom: 0;
-    width: min(480px, calc(100vw - 260px));
+    width: min(520px, 90vw);
     background: var(--color-bg-base);
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 8px 0 40px rgba(0, 0, 0, 0.6);
