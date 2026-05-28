@@ -1,0 +1,11 @@
+{
+  "ticketDbPaths": {
+    "food-cart": "../demos/food-cart/tickets.db"
+  },
+  "apiPort": 8765,
+  "healthChecks": [],
+  "lemonadeUrl": "http://[::1]:13305",
+  "pixelProjectStart": null,
+  "researchDbPath": "../research/research.db",
+  "researchRoot": "../research"
+}
