@@ -1,12 +1,23 @@
-import { writable } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 
-/** Whether the intake drawer is open */
-export const drawerOpen = writable(false);
+export type DrawerMode = 'closed' | 'forge' | 'sift';
+
+export const drawerMode = writable<DrawerMode>('closed');
+
+export const drawerOpen = derived(drawerMode, m => m !== 'closed');
+
+export function openForgeDrawer() {
+  drawerMode.set('forge');
+}
+
+export function openSiftDrawer() {
+  drawerMode.set('sift');
+}
 
 export function openDrawer() {
-  drawerOpen.set(true);
+  drawerMode.set('forge');
 }
 
 export function closeDrawer() {
-  drawerOpen.set(false);
+  drawerMode.set('closed');
 }

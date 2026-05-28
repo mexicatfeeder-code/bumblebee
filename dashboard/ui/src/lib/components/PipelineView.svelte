@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { pipelineStore } from '$lib/stores/pipeline';
   import { ticketStore } from '$lib/stores/tickets';
+  import { openForgeDrawer, openSiftDrawer } from '$lib/stores/drawer';
   import type { PipelineState } from '$lib/stores/pipeline';
   import PixelActivity from '$lib/components/PixelActivity.svelte';
   import HardwarePanel from '$lib/components/HardwarePanel.svelte';
@@ -111,10 +112,15 @@
 
   <!-- Forge Row: Creating Tickets → Coding → QA Review -->
   <div class="phase-row">
-    <!-- Forge Avatar -->
+    <!-- Forge Avatar + New Project -->
     <div class="row-avatar">
       <img src="/images/forge-avatar.png" alt="Forge" class="avatar-img" />
       <span class="avatar-name">Forge</span>
+      <button class="row-add-btn" on:click={openForgeDrawer} title="New Project">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
     </div>
 
     <!-- Creating Tickets -->
@@ -239,10 +245,15 @@
 
   <!-- Sift Row: Searching Internet → Compiling Report -->
   <div class="phase-row sift-row">
-    <!-- Sift Avatar -->
+    <!-- Sift Avatar + New Research -->
     <div class="row-avatar">
       <img src="/images/sift-avatar.png" alt="Sift" class="avatar-img" />
       <span class="avatar-name">Sift</span>
+      <button class="row-add-btn" on:click={openSiftDrawer} title="New Research">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
     </div>
 
     <!-- Searching Internet -->
@@ -423,6 +434,27 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--color-text-muted);
+  }
+
+  .row-add-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+    margin-top: auto;
+  }
+
+  .row-add-btn:hover {
+    color: var(--color-accent-primary);
+    border-color: rgba(58, 190, 255, 0.4);
+    background: rgba(58, 190, 255, 0.08);
   }
 
   .sift-row {
