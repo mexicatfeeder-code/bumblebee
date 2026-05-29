@@ -21,12 +21,12 @@ async function fetchCategories(): Promise<MenuCategory[]> {
     name: c.name,
     description: c.description,
     icon: c.icon,
-    sortOrder: c.display_order ?? 0,
+    sortOrder: c.sort_order ?? 0,
   }));
 }
 
 async function fetchMenuItems(): Promise<MenuItem[]> {
-  const res = await fetch(`${API_BASE}/menu-items`);
+  const res = await fetch(`${API_BASE}/menu`);
   if (!res.ok) throw new Error("Failed to fetch menu items");
   const raw = await res.json();
   const data = Array.isArray(raw) ? raw : (raw.items || []);
@@ -35,9 +35,9 @@ async function fetchMenuItems(): Promise<MenuItem[]> {
     categoryId: String(item.category_id),
     name: item.name,
     description: item.description,
-    price: item.price,
-    image: item.image_url,
-    isAvailable: item.is_available,
+    price: item.price / 100, // convert cents to dollars
+    image: item.photo_url,
+    isAvailable: item.available,
     tags: item.tags,
     allergens: item.allergens,
   }));

@@ -313,7 +313,7 @@ For code files: include the COMPLETE implementation with all imports, all functi
 6. **Database**: Sync `sqlite3` only (NOT aiosqlite). `get_db()` returns connection with `row_factory = sqlite3.Row`. All routers call `get_db()` directly — do NOT use FastAPI `Depends()`.
 7. **Frontend fetch**: Use `fetch()` with relative URLs (`/api/categories`). Always parse as `await res.json()` which returns the array/object directly.
 8. **Shared types**: TypeScript interfaces in `frontend/src/types/index.ts`, Pydantic models in `backend/schemas.py`. These MUST match field-for-field.
-9. **Styling**: Inline styles only. NO CSS file imports. NO Tailwind utility classes (unless explicitly in the tech stack).
+9. **Styling**: Use Tailwind CSS utility classes when the tech stack includes Tailwind. Gate 0 MUST include tailwind.config.js, postcss.config.js, and frontend/src/index.css with `@tailwind base; @tailwind components; @tailwind utilities;`. If Tailwind is NOT in the tech stack, use inline styles. NEVER import component-specific .css files — use only Tailwind classes or inline styles.
 10. **Routing**: `react-router-dom` v6. `frontend/src/App.tsx` uses `<BrowserRouter>` + `<Routes>` + `<Route>` for every page.
 
 ## GATE STRUCTURE

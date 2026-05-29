@@ -1,92 +1,114 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import Header from '../components/Header';
-import { Category, MenuItem, MenuItemInput } from '../types';
-
-const emptyForm: MenuItemInput = {
-  name: '',
-  description: '',
-  price: 0,
-  category_id: 0,
-  photo_url: '',
-  available: true,
-  sort_order: 0,
-};
+import { useNavigate, useParams } from 'react-router-dom';
+import Layout, { buttonStyle, cardStyle } from '../components/Layout';
+import { Category, MenuItem } from '../types';
 
 export default function AdminItemFormPage() {
-  const navigate = useNavigate();
-  const { itemId } = useParams();
-  const isEdit = itemId !== 'new';
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [form, setForm] = useState<MenuItemInput>(emptyForm);
+  const { id } = useParams();
+  const nav = useNavigate();
+  const [cats, setCats] = useState<Category[]>([]);
+  const [form, setForm] = useState({ name: '', description: '', price: '0', category_id: 1, photo_url: '', available: true, sort_order: 0 });
 
   useEffect(() => {
-    if (localStorage.getItem('food-cart-admin') !== 'true') {
-      navigate('/admin');
-      return;
-    }
-    fetch('/api/categories').then((res) => res.json()).then((data: Category[]) => {
-      setCategories(data);
-      if (data.length > 0) {
-        setForm((current) => ({ ...current, category_id: current.category_id || data[0].id }));
-      }
-    });
-    if (isEdit) {
-      fetch(`/api/menu-items/${itemId}`).then((res) => res.json()).then((item: MenuItem) => {
-        setForm({
-          name: item.name,
-          description: item.description,
-          price: item.price,
-          category_id: item.category_id,
-          photo_url: item.photo_url,
-          available: item.available,
-          sort_order: item.sort_order,
-        });
+    fetch('/api/categories')
+      .then(r => r.json())
+      .then(c => {
+        setCats(c);
+        if (c[0]) setForm(f => ({ ...f, category_id: c[0].id }));
       });
+    if (id && id !== 'new') {
+      fetch(`/api/menu/${id}`)
+        .then(r => r.json())
+        .then((m: MenuItem) => setForm({ ...m, price: String(m.price) }));
     }
-  }, [navigate, isEdit, itemId]);
+  }, [id]);
 
-  const uploadPhoto = async (file: File) => {
-    const data = new FormData();
-    data.append('file', file);
-    const res = await fetch('/api/uploads', { method: 'POST', body: data });
-    const result = await res.json();
-    setForm((current) => ({ ...current, photo_url: result.url }));
-  };
+  async function upload(file: File) {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/api/uploads', { method: 'POST', body: fd });
+    const data = await res.json();
+    setForm(f => ({ ...f, photo_url: data.url }));
+  }
 
-  const save = async () => {
-    const url = isEdit ? `/api/menu-items/${itemId}` : '/api/menu-items';
-    const method = isEdit ? 'PUT' : 'POST';
-    await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    navigate('/admin/menu');
-  };
+  async function save() {
+    const body = {
+      ...form,
+      price: Number(form.price),
+      category_id: Number(form.category_id),
+      sort_order: Number(form.sort_order),
+    };
+    await fetch(
+      id && id !== 'new' ? `/api/menu/${id}` : '/api/menu',
+      {
+        method: id && id !== 'new' ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }
+    );
+    nav('/admin/menu');
+  }
+
+  const input = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }));
 
   return (
-    <div>
-      <Header title="Food Cart Admin" subtitle={isEdit ? 'Edit item' : 'Add item'} />
-      <main style={{ maxWidth: 'var(--max-width)', margin: '0 auto', padding: 'var(--space-4)' }}>
-        <Link to="/admin/menu" style={{ color: 'var(--color-primary)' }}>← Back to menu</Link>
-        <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', marginTop: 'var(--space-4)', display: 'grid', gap: 'var(--space-3)' }}>
-          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Name" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }} />
-          <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)`, minHeight: '100px' }} />
-          <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} placeholder="Price in cents" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }} />
-          <select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: Number(e.target.value) })} style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }}>
-            {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-          </select>
-          <input value={form.photo_url} onChange={(e) => setForm({ ...form, photo_url: e.target.value })} placeholder="Photo URL" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }} />
-          <input type="file" accept="image/*" onChange={(e) => e.target.files && uploadPhoto(e.target.files[0])} />
-          <input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} placeholder="Sort order" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }} />
-          <label style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-            <input type="checkbox" checked={form.available} onChange={(e) => setForm({ ...form, available: e.target.checked })} />
+    <Layout>
+      <div style={cardStyle}>
+        <h1>{id === 'new' ? 'Add' : 'Edit'} Item</h1>
+        <input
+          placeholder='Name'
+          value={form.name}
+          onChange={e => input('name', e.target.value)}
+          style={{ padding: 10, width: '100%', marginBottom: 8 }}
+        />
+        <textarea
+          placeholder='Description'
+          value={form.description}
+          onChange={e => input('description', e.target.value)}
+          style={{ padding: 10, width: '100%', marginBottom: 8 }}
+        />
+        <input
+          placeholder='Price cents'
+          value={form.price}
+          onChange={e => input('price', e.target.value)}
+          style={{ padding: 10, width: '100%', marginBottom: 8 }}
+        />
+        <select
+          value={form.category_id}
+          onChange={e => input('category_id', Number(e.target.value))}
+          style={{ padding: 10, width: '100%', marginBottom: 8 }}
+        >
+          {cats.map(c => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <input
+          placeholder='Photo URL'
+          value={form.photo_url}
+          onChange={e => input('photo_url', e.target.value)}
+          style={{ padding: 10, width: '100%', marginBottom: 8 }}
+        />
+        <input
+          type='file'
+          accept='image/*'
+          onChange={e => e.target.files?.[0] && upload(e.target.files[0])}
+        />
+        <p>
+          <label>
+            <input
+              type='checkbox'
+              checked={form.available}
+              onChange={e => input('available', e.target.checked)}
+            />{' '}
             Available
           </label>
-          <button onClick={save} style={{ background: 'var(--color-primary)', color: 'var(--color-white)', border: 'none', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>Save Item</button>
-        </div>
-      </main>
-    </div>
+        </p>
+        <button onClick={save} style={buttonStyle}>
+          Save
+        </button>
+      </div>
+    </Layout>
   );
 }

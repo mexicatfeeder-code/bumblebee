@@ -1,97 +1,37 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import Header from '../components/Header';
+import Layout, { buttonStyle, cardStyle, money } from '../components/Layout';
 import { useCart } from '../context/CartContext';
 import { Category, MenuItem, Settings } from '../types';
 
-function formatPrice(price: number) {
-  return `$${(price / 100).toFixed(2)}`;
-}
-
 export default function MenuPage() {
-  const { addItem } = useCart();
-  const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [cats, setCats] = useState<Category[]>([]);
+  const [cat, setCat] = useState<number | 'all'>('all');
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [activeCategory, setActiveCategory] = useState<number | null>(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    Promise.all([
-      fetch('/api/categories').then((res) => res.json()),
-      fetch('/api/menu-items').then((res) => res.json()),
-      fetch('/api/settings').then((res) => res.json()),
-    ])
-      .then(([categoryData, itemData, settingsData]) => {
-        setCategories(categoryData);
-        setItems(itemData);
-        setSettings(settingsData);
-        if (categoryData.length > 0) {
-          setActiveCategory(categoryData[0].id);
-        }
-      })
-      .catch(() => setError('Unable to load menu right now.'));
-  }, []);
-
-  const filteredItems = useMemo(() => {
-    return items.filter((item) => item.available && (activeCategory === null || item.category_id === activeCategory));
-  }, [items, activeCategory]);
-
-  return (
-    <div>
-      <Header title={settings?.cart_name || 'Food Cart'} subtitle={settings?.tagline || 'Fresh food made fast'} />
-      <main style={{ maxWidth: 'var(--max-width)', margin: '0 auto', padding: 'var(--space-4)' }}>
-        {settings && !settings.is_open ? (
-          <div style={{ background: 'var(--color-danger-bg)', color: 'var(--color-danger)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)' }}>
-            We are currently closed. Please check back later.
-          </div>
-        ) : null}
-        {error ? <div style={{ color: 'var(--color-danger)', marginBottom: 'var(--space-4)' }}>{error}</div> : null}
-        <div style={{ display: 'flex', gap: 'var(--space-2)', overflowX: 'auto', marginBottom: 'var(--space-4)' }}>
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setActiveCategory(category.id)}
-              style={{
-                border: 'none',
-                borderRadius: 'var(--radius-full)',
-                padding: 'var(--space-2) var(--space-3)',
-                background: activeCategory === category.id ? 'var(--color-primary)' : 'var(--color-primary-light)',
-                color: activeCategory === category.id ? 'var(--color-white)' : 'var(--color-primary-dark)',
-                cursor: 'pointer',
-              }}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-        {filteredItems.length === 0 ? <div>No menu items available.</div> : null}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 'var(--space-4)' }}>
-          {filteredItems.map((item) => (
-            <div key={item.id} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>
-              <Link to={`/items/${item.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-                <img src={item.photo_url} alt={item.name} style={{ width: '100%', height: '180px', objectFit: 'cover' }} />
-                <div style={{ padding: 'var(--space-3)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-                    <strong>{item.name}</strong>
-                    <span>{formatPrice(item.price)}</span>
-                  </div>
-                  <p style={{ margin: 'var(--space-2) 0', color: 'var(--color-text-secondary)' }}>{item.description}</p>
-                </div>
-              </Link>
-              <div style={{ padding: '0 var(--space-3) var(--space-3)' }}>
-                <button
-                  disabled={settings ? !settings.is_open : false}
-                  onClick={() => addItem(item, 1)}
-                  style={{ width: '100%', background: 'var(--color-primary)', color: 'var(--color-white)', border: 'none', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)', cursor: 'pointer' }}
-                >
-                  Add to Cart
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
+  const { addItem } = useCart();
+  useEffect(() => { Promise.all([fetch('/api/menu').then(r=>r.json()), fetch('/api/categories').then(r=>r.json()), fetch('/api/settings').then(r=>r.json())]).then(([m,c,s]) => { setItems(m); setCats(c); setSettings(s); }); }, []);
+  const shown = cat === 'all' ? items : items.filter(i => i.category_id === cat);
+  return <Layout>
+    <section style={{ ...cardStyle, background: 'var(--bg-card)', marginBottom: 16 }}>
+      <h1 style={{ margin: 0, fontSize: 34 }}>{settings?.cart_name || 'Food Cart'}</h1>
+      <p style={{ fontSize: 18 }}>{settings?.tagline || 'Fresh food made fast'}</p>
+      {settings && !settings.is_open && <b style={{ color: 'var(--color-danger)' }}>We are closed right now. Please check back soon.</b>}
+    </section>
+    <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16 }}>
+      <button onClick={() => setCat('all')} style={{ ...buttonStyle, background: cat === 'all' ? 'var(--color-primary)' : 'var(--text-secondary)' }}>All</button>
+      {cats.map(c => <button key={c.id} onClick={() => setCat(c.id)} style={{ ...buttonStyle, background: cat === c.id ? 'var(--color-primary)' : 'var(--text-secondary)' }}>{c.name}</button>)}
     </div>
-  );
+    {shown.length === 0 && <p>No menu items available.</p>}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: 16 }}>
+      {shown.map(item => <div key={item.id} style={cardStyle}>
+        {item.photo_url && <img src={item.photo_url} style={{ width: '100%', height: 150, objectFit: 'cover', borderRadius: 14 }} />}
+        <h2>{item.name}</h2><p>{item.description}</p><b>{money(item.price)}</b>
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <Link to={`/items/${item.id}`} style={{ ...buttonStyle, background: 'var(--text-secondary)', textDecoration: 'none' }}>Details</Link>
+          <button disabled={!settings?.is_open} onClick={() => addItem(item)} style={buttonStyle}>Add</button>
+        </div>
+      </div>)}
+    </div>
+  </Layout>;
 }

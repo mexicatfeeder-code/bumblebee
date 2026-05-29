@@ -1,58 +1,105 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
-import { Settings, SettingsInput } from '../types';
+import { Link } from 'react-router-dom';
+import Layout, { buttonStyle, cardStyle } from '../components/Layout';
+import { Settings } from '../types';
 
 export default function AdminSettingsPage() {
-  const navigate = useNavigate();
-  const [form, setForm] = useState<SettingsInput>({
-    cart_name: '',
-    tagline: '',
-    is_open: true,
-    estimated_wait_minutes: 10,
-    admin_pin: '1234',
-  });
-  const [message, setMessage] = useState('');
-
+  const [s, setS] = useState<Settings | null>(null);
+  const [saved, setSaved] = useState(false);
   useEffect(() => {
-    if (localStorage.getItem('food-cart-admin') !== 'true') {
-      navigate('/admin');
-      return;
-    }
-    fetch('/api/settings').then((res) => res.json()).then((data: Settings) => setForm(data));
-  }, [navigate]);
-
-  const save = async () => {
-    await fetch('/api/settings', {
+    fetch('/api/settings')
+      .then((r) => r.json())
+      .then(setS);
+  }, []);
+  if (!s) return <Layout><p>Loading...</p></Layout>;
+  const set = (k: keyof Settings, v: any) => setS({ ...s, [k]: v });
+  async function save() {
+    const res = await fetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify(s),
     });
-    setMessage('Settings saved.');
-  };
-
+    setS(await res.json());
+    setSaved(true);
+  }
   return (
-    <div>
-      <Header title="Food Cart Admin" subtitle="Settings" />
-      <main style={{ maxWidth: 'var(--max-width)', margin: '0 auto', padding: 'var(--space-4)' }}>
-        <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-          <Link to="/admin/orders" style={{ color: 'var(--color-primary)' }}>Orders</Link>
-          <Link to="/admin/menu" style={{ color: 'var(--color-primary)' }}>Menu</Link>
-          <Link to="/admin/settings" style={{ color: 'var(--color-primary)' }}>Settings</Link>
-        </div>
-        <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', display: 'grid', gap: 'var(--space-3)' }}>
-          <input value={form.cart_name} onChange={(e) => setForm({ ...form, cart_name: e.target.value })} placeholder="Cart name" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }} />
-          <input value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} placeholder="Tagline" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }} />
-          <input type="number" value={form.estimated_wait_minutes} onChange={(e) => setForm({ ...form, estimated_wait_minutes: Number(e.target.value) })} placeholder="Estimated wait minutes" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }} />
-          <input value={form.admin_pin} onChange={(e) => setForm({ ...form, admin_pin: e.target.value })} placeholder="Admin PIN" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }} />
-          <label style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-            <input type="checkbox" checked={form.is_open} onChange={(e) => setForm({ ...form, is_open: e.target.checked })} />
-            Ordering Open
+    <Layout>
+      <div style={cardStyle}>
+        <h1>Settings</h1>
+        <p>
+          <Link to='/admin/orders'>Orders</Link> ·{' '}
+          <Link to='/admin/menu'>Menu</Link>
+        </p>
+        <label>
+          Cart name
+          <input
+            value={s.cart_name}
+            onChange={(e) => set('cart_name', e.target.value)}
+            style={{
+              display: 'block',
+              padding: 10,
+              width: '100%',
+              marginBottom: 8,
+            }}
+          />
+        </label>
+        <label>
+          Tagline
+          <input
+            value={s.tagline}
+            onChange={(e) => set('tagline', e.target.value)}
+            style={{
+              display: 'block',
+              padding: 10,
+              width: '100%',
+              marginBottom: 8,
+            }}
+          />
+        </label>
+        <label>
+          Estimated wait minutes
+          <input
+            type='number'
+            value={s.estimated_wait_minutes}
+            onChange={(e) =>
+              set('estimated_wait_minutes', Number(e.target.value))
+            }
+            style={{
+              display: 'block',
+              padding: 10,
+              width: '100%',
+              marginBottom: 8,
+            }}
+          />
+        </label>
+        <label>
+          Admin PIN
+          <input
+            value={s.admin_pin}
+            onChange={(e) => set('admin_pin', e.target.value)}
+            style={{
+              display: 'block',
+              padding: 10,
+              width: '100%',
+              marginBottom: 8,
+            }}
+          />
+        </label>
+        <p>
+          <label>
+            <input
+              type='checkbox'
+              checked={s.is_open}
+              onChange={(e) => set('is_open', e.target.checked)}
+            />{' '}
+            Open for ordering
           </label>
-          {message ? <div style={{ color: 'var(--color-success)' }}>{message}</div> : null}
-          <button onClick={save} style={{ background: 'var(--color-primary)', color: 'var(--color-white)', border: 'none', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>Save Settings</button>
-        </div>
-      </main>
-    </div>
+        </p>
+        <button onClick={save} style={buttonStyle}>
+          Save
+        </button>
+        {saved && <b style={{ marginLeft: 12 }}>Saved</b>}
+      </div>
+    </Layout>
   );
 }

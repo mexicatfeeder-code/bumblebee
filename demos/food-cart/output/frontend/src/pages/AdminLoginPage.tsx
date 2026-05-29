@@ -1,47 +1,50 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
-import { AdminAuthResponse } from '../types';
+import Layout, { buttonStyle, cardStyle } from '../components/Layout';
 
 export default function AdminLoginPage() {
-  const navigate = useNavigate();
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const nav = useNavigate();
 
-  const submit = async () => {
-    setError('');
-    const res = await fetch('/api/settings/verify-pin', {
+  async function login() {
+    const res = await fetch('/api/auth/pin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin }),
     });
-    const data: AdminAuthResponse = await res.json();
-    if (data.success) {
-      localStorage.setItem('food-cart-admin', 'true');
-      navigate('/admin/orders');
-      return;
+    const data = await res.json();
+    if (data.ok) {
+      localStorage.setItem('foodcart_admin', 'yes');
+      nav('/admin/orders');
+    } else {
+      setError('Invalid PIN');
     }
-    setError('Invalid PIN.');
-  };
+  }
 
   return (
-    <div>
-      <Header title="Food Cart" subtitle="Admin access" />
-      <main style={{ maxWidth: 'var(--max-width)', margin: '0 auto', padding: 'var(--space-4)' }}>
-        <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)' }}>
-          <h1 style={{ marginTop: 0 }}>Enter Admin PIN</h1>
-          <input
-            type="password"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            style={{ width: '100%', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)`, marginBottom: 'var(--space-3)' }}
-          />
-          {error ? <div style={{ color: 'var(--color-danger)', marginBottom: 'var(--space-3)' }}>{error}</div> : null}
-          <button onClick={submit} style={{ width: '100%', background: 'var(--color-primary)', color: 'var(--color-white)', border: 'none', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>
-            Continue
-          </button>
-        </div>
-      </main>
-    </div>
+    <Layout>
+      <div style={{ ...cardStyle, maxWidth: 420, margin: '40px auto' }}>
+        <h1>Admin Login</h1>
+        <input
+          type="password"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+          placeholder="PIN"
+          style={{
+            padding: 12,
+            borderRadius: 10,
+            width: '100%',
+            border: '1px solid var(--color-primary)',
+            boxSizing: 'border-box',
+          }}
+        />
+        {error && <p style={{ color: 'var(--color-danger)' }}>{error}</p>}
+        <br />
+        <button onClick={login} style={buttonStyle}>
+          Enter
+        </button>
+      </div>
+    </Layout>
   );
 }

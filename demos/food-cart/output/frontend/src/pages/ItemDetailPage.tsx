@@ -1,64 +1,36 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import Header from '../components/Header';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import Layout, { buttonStyle, cardStyle, money } from '../components/Layout';
 import { useCart } from '../context/CartContext';
-import { MenuItem, Settings } from '../types';
+import { MenuItem } from '../types';
 
 export default function ItemDetailPage() {
-  const { itemId } = useParams();
+  const { id } = useParams();
+  const nav = useNavigate();
   const { addItem } = useCart();
   const [item, setItem] = useState<MenuItem | null>(null);
-  const [settings, setSettings] = useState<Settings | null>(null);
-  const [quantity, setQuantity] = useState(1);
+  const [qty, setQty] = useState(1);
   const [error, setError] = useState('');
-
   useEffect(() => {
-    fetch(`/api/menu-items/${itemId}`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error('not found');
-        }
-        return res.json();
-      })
+    fetch(`/api/menu/${id}`)
+      .then(r => r.ok ? r.json() : Promise.reject())
       .then(setItem)
-      .catch(() => setError('Menu item not found.'));
-    fetch('/api/settings').then((res) => res.json()).then(setSettings);
-  }, [itemId]);
-
-  return (
-    <div>
-      <Header title={settings?.cart_name || 'Food Cart'} subtitle={settings?.tagline || 'Fresh food made fast'} />
-      <main style={{ maxWidth: 'var(--max-width)', margin: '0 auto', padding: 'var(--space-4)' }}>
-        <Link to="/" style={{ color: 'var(--color-primary)', textDecoration: 'none' }}>← Back to menu</Link>
-        {error ? <div style={{ marginTop: 'var(--space-4)', color: 'var(--color-danger)' }}>{error}</div> : null}
-        {item ? (
-          <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginTop: 'var(--space-4)', boxShadow: 'var(--shadow-md)' }}>
-            <img src={item.photo_url} alt={item.name} style={{ width: '100%', height: '280px', objectFit: 'cover' }} />
-            <div style={{ padding: 'var(--space-4)' }}>
-              <h1 style={{ margin: '0 0 var(--space-2)' }}>{item.name}</h1>
-              <div style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-2)' }}>{item.category_name}</div>
-              <div style={{ fontWeight: 700, marginBottom: 'var(--space-3)' }}>${(item.price / 100).toFixed(2)}</div>
-              <p style={{ color: 'var(--color-text)' }}>{item.description}</p>
-              <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', marginTop: 'var(--space-4)' }}>
-                <input
-                  type="number"
-                  min={1}
-                  value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value) || 1)}
-                  style={{ width: '80px', padding: 'var(--space-2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}
-                />
-                <button
-                  disabled={settings ? !settings.is_open : false}
-                  onClick={() => addItem(item, quantity)}
-                  style={{ background: 'var(--color-primary)', color: 'var(--color-white)', border: 'none', borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-4)', cursor: 'pointer' }}
-                >
-                  Add to Cart
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </main>
+      .catch(() => setError('Item not found'));
+  }, [id]);
+  if (error) return <Layout><p>{error}</p><Link to='/'>Back to menu</Link></Layout>;
+  if (!item) return <Layout><p>Loading...</p></Layout>;
+  return <Layout>
+    <div style={cardStyle}>
+      {item.photo_url && <img src={item.photo_url} style={{ width: '100%', maxHeight: 360, objectFit: 'cover', borderRadius: 18 }} />}
+      <h1>{item.name}</h1>
+      <p>{item.description}</p>
+      <h2>{money(item.price)}</h2>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <button onClick={() => setQty(Math.max(1, qty - 1))} style={buttonStyle}>-</button>
+        <b>{qty}</b>
+        <button onClick={() => setQty(qty + 1)} style={buttonStyle}>+</button>
+        <button onClick={() => { addItem(item, qty); nav('/cart'); }} style={buttonStyle}>Add to cart</button>
+      </div>
     </div>
-  );
+  </Layout>;
 }
