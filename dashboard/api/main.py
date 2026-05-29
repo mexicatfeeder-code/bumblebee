@@ -40,6 +40,23 @@ async def startup():
     asyncio.get_event_loop().run_in_executor(None, get_gpu_telemetry)
 
 
+# --- Launch App redirect: /app/{slug} -> project dev server ---
+from fastapi.responses import RedirectResponse as _RedirectResponse
+
+# Map slugs to dev server ports
+_APP_PORTS = {"food-cart": 4177}
+
+@app.get("/app/{slug}")
+@app.get("/app/{slug}/{rest:path}")
+async def launch_app(slug: str, rest: str = ""):
+    port = _APP_PORTS.get(slug)
+    if port:
+        target = f"http://localhost:{port}/{rest}" if rest else f"http://localhost:{port}/"
+        return _RedirectResponse(target)
+    from fastapi.responses import JSONResponse
+    return JSONResponse({"error": f"No app server for '{slug}'"}, status_code=404)
+
+
 # --- Serve built frontend (production mode) ---
 # Mount SvelteKit static assets first (/_app, /favicon, etc.)
 _build = Path(__file__).resolve().parent.parent / "ui" / "build"
