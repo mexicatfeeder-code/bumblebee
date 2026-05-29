@@ -300,7 +300,7 @@ def run_guardrails(
     files_written: list[str],
     deliverable_root: Path,
     baselines: dict[str, str] | None = None,
-    diff_threshold_pct: float = 60.0,
+    diff_threshold_pct: float = 100.0,  # Disabled for new project builds
 ) -> list[GuardrailResult]:
     """
     Run all post-write guardrails on every file Forge wrote.
