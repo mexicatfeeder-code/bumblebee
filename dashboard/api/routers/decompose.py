@@ -137,7 +137,7 @@ def _make_llm_fn(base_url: str, model_id: str, api_key: str):
             "model": model_id,
             "messages": messages,
             "temperature": 0.3,  # Lower temp for structured output
-            "max_tokens": 8192,
+            "max_tokens": 32000,
         }
 
         # Synchronous call (decompose.py expects sync llm_fn)
@@ -168,7 +168,7 @@ def _make_streaming_llm(base_url: str, model_id: str, api_key: str):
                 {"role": "user", "content": user_prompt},
             ],
             "temperature": 0.3,
-            "max_tokens": 8192,
+            "max_tokens": 32000,
             "stream": True,
         }
 
