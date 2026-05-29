@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import { AdminAuthResponse } from '../types';
-import './design-tokens.css';
+import './styles/design-tokens.css';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
@@ -35,29 +35,10 @@ export default function AdminLoginPage() {
             type="password"
             value={pin}
             onChange={(e) => setPin(e.target.value)}
-            style={{
-              width: '100%',
-              padding: 'var(--space-3)',
-              borderRadius: 'var(--radius-md)',
-              border: `1px solid var(--border-color)`,
-              marginBottom: 'var(--space-3)',
-              boxSizing: 'border-box',
-            }}
+            style={{ width: '100%', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)`, marginBottom: 'var(--space-3)' }}
           />
           {error ? <div style={{ color: 'var(--color-danger)', marginBottom: 'var(--space-3)' }}>{error}</div> : null}
-          <button
-            onClick={submit}
-            style={{
-              width: '100%',
-              background: 'var(--color-primary)',
-              color: 'var(--color-white)',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              padding: 'var(--space-3)',
-              cursor: 'pointer',
-              fontWeight: 600,
-            }}
-          >
+          <button onClick={submit} style={{ width: '100%', background: 'var(--color-primary)', color: 'var(--color-white)', border: 'none', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>
             Continue
           </button>
         </div>

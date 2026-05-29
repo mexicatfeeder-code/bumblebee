@@ -1,353 +1,59 @@
 import { useEffect, useState } from 'react';
-import { UpdateSettingsInput } from '../types';
-import '../styles/design-tokens.css';
+import { Link, useNavigate } from 'react-router-dom';
+import Header from '../components/Header';
+import { Settings, SettingsInput } from '../types';
+import './styles/design-tokens.css';
 
 export default function AdminSettingsPage() {
-  const [settings, setSettings] = useState<UpdateSettingsInput | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState('');
-  const [formData, setFormData] = useState<UpdateSettingsInput>({
+  const navigate = useNavigate();
+  const [form, setForm] = useState<SettingsInput>({
     cart_name: '',
-    opening_time: '',
-    closing_time: '',
-    admin_pin: '',
+    tagline: '',
+    is_open: true,
+    estimated_wait_minutes: 10,
+    admin_pin: '1234',
   });
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    fetch('/api/settings')
-      .then((r) => r.json())
-      .then((data) => {
-        setSettings(data);
-        setFormData({
-          cart_name: data.cart_name,
-          opening_time: data.opening_time,
-          closing_time: data.closing_time,
-          admin_pin: '',
-        });
-      });
-  }, []);
-
-  const handleStartEdit = () => {
-    setError('');
-    setPin('');
-    setEditing(true);
-  };
-
-  const handleCancelEdit = () => {
-    setEditing(false);
-    setError('');
-    setPin('');
-    if (settings) {
-      setFormData({
-        cart_name: settings.cart_name,
-        opening_time: settings.opening_time,
-        closing_time: settings.closing_time,
-        admin_pin: '',
-      });
-    }
-  };
-
-  const handleVerifyAndSave = async () => {
-    setError('');
-
-    // Verify PIN first
-    const verifyRes = await fetch('/api/settings/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ admin_pin: pin }),
-    });
-    const verifyData = await verifyRes.json();
-
-    if (!verifyData.valid) {
-      setError('Invalid PIN');
+    if (localStorage.getItem('food-cart-admin') !== 'true') {
+      navigate('/admin');
       return;
     }
+    fetch('/api/settings').then((res) => res.json()).then((data: Settings) => setForm(data));
+  }, [navigate]);
 
-    // Save settings
-    const saveRes = await fetch('/api/settings', {
+  const save = async () => {
+    await fetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        cart_name: formData.cart_name,
-        opening_time: formData.opening_time,
-        closing_time: formData.closing_time,
-        admin_pin: pin,
-      }),
+      body: JSON.stringify(form),
     });
-    const updated = await saveRes.json();
-    setSettings(updated);
-    setEditing(false);
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setMessage('Settings saved.');
   };
 
   return (
-    <div style={{ padding: '16px', maxWidth: '600px', margin: '0 auto' }}>
-      <h1 style={{ marginBottom: '16px' }}>Settings</h1>
-
-      {settings && (
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            borderRadius: '8px',
-            padding: '16px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          }}
-        >
-          {!editing ? (
-            <>
-              <div style={{ marginBottom: '12px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12px',
-                    color: 'var(--text-muted)',
-                    marginBottom: '4px',
-                  }}
-                >
-                  Cart Name
-                </label>
-                <div
-                  style={{
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  {settings.cart_name}
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '12px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12px',
-                    color: 'var(--text-muted)',
-                    marginBottom: '4px',
-                  }}
-                >
-                  Hours
-                </label>
-                <div
-                  style={{
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  {settings.opening_time} - {settings.closing_time}
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '12px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12px',
-                    color: 'var(--text-muted)',
-                    marginBottom: '4px',
-                  }}
-                >
-                  Admin PIN
-                </label>
-                <div
-                  style={{
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  3333
-                </div>
-              </div>
-
-              <button
-                onClick={handleStartEdit}
-                style={{
-                  background: 'var(--accent)',
-                  color: 'var(--bg-primary)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Edit Settings
-              </button>
-            </>
-          ) : (
-            <>
-              <div style={{ marginBottom: '12px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12px',
-                    color: 'var(--text-muted)',
-                    marginBottom: '4px',
-                  }}
-                >
-                  Cart Name
-                </label>
-                <input
-                  name="cart_name"
-                  value={formData.cart_name}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--border)',
-                    background: 'var(--bg-input)',
-                    color: 'var(--text-primary)',
-                    fontSize: '14px',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '12px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12px',
-                    color: 'var(--text-muted)',
-                    marginBottom: '4px',
-                  }}
-                >
-                  Opening Time
-                </label>
-                <input
-                  name="opening_time"
-                  type="time"
-                  value={formData.opening_time}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--border)',
-                    background: 'var(--bg-input)',
-                    color: 'var(--text-primary)',
-                    fontSize: '14px',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '12px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12px',
-                    color: 'var(--text-muted)',
-                    marginBottom: '4px',
-                  }}
-                >
-                  Closing Time
-                </label>
-                <input
-                  name="closing_time"
-                  type="time"
-                  value={formData.closing_time}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--border)',
-                    background: 'var(--bg-input)',
-                    color: 'var(--text-primary)',
-                    fontSize: '14px',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '12px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12px',
-                    color: 'var(--text-muted)',
-                    marginBottom: '4px',
-                  }}
-                >
-                  Admin PIN (to confirm changes)
-                </label>
-                <input
-                  type="password"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  placeholder="Enter PIN"
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--border)',
-                    background: 'var(--bg-input)',
-                    color: 'var(--text-primary)',
-                    fontSize: '14px',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-
-              {error && (
-                <div
-                  style={{
-                    color: 'var(--error)',
-                    fontSize: '13px',
-                    marginBottom: '8px',
-                  }}
-                >
-                  {error}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={handleVerifyAndSave}
-                  style={{
-                    background: 'var(--accent)',
-                    color: 'var(--bg-primary)',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '8px 16px',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Save
-                </button>
-                <button
-                  onClick={handleCancelEdit}
-                  style={{
-                    background: 'var(--bg-input)',
-                    color: 'var(--text-primary)',
-                    border: `1px solid var(--border)`,
-                    borderRadius: '6px',
-                    padding: '8px 16px',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </>
-          )}
+    <div>
+      <Header title="Food Cart Admin" subtitle="Settings" />
+      <main style={{ maxWidth: 'var(--max-width)', margin: '0 auto', padding: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
+          <Link to="/admin/orders" style={{ color: 'var(--color-primary)' }}>Orders</Link>
+          <Link to="/admin/menu" style={{ color: 'var(--color-primary)' }}>Menu</Link>
+          <Link to="/admin/settings" style={{ color: 'var(--color-primary)' }}>Settings</Link>
         </div>
-      )}
+        <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', display: 'grid', gap: 'var(--space-3)' }}>
+          <input value={form.cart_name} onChange={(e) => setForm({ ...form, cart_name: e.target.value })} placeholder="Cart name" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }} />
+          <input value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} placeholder="Tagline" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }} />
+          <input type="number" value={form.estimated_wait_minutes} onChange={(e) => setForm({ ...form, estimated_wait_minutes: Number(e.target.value) })} placeholder="Estimated wait minutes" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }} />
+          <input value={form.admin_pin} onChange={(e) => setForm({ ...form, admin_pin: e.target.value })} placeholder="Admin PIN" style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: `1px solid var(--border-color)` }} />
+          <label style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+            <input type="checkbox" checked={form.is_open} onChange={(e) => setForm({ ...form, is_open: e.target.checked })} />
+            Ordering Open
+          </label>
+          {message ? <div style={{ color: 'var(--color-success)' }}>{message}</div> : null}
+          <button onClick={save} style={{ background: 'var(--color-primary)', color: 'var(--color-white)', border: 'none', borderRadius: 'var(--radius-md)', padding: 'var(--space-3)' }}>Save Settings</button>
+        </div>
+      </main>
     </div>
   );
 }

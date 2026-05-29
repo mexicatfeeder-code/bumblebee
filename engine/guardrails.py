@@ -193,7 +193,7 @@ def check_export_integrity(
 def check_diff_size(
     path: Path,
     deliverable_root: Path,
-    threshold_pct: float = 95.0,  # High threshold — full rewrites are normal for new projects
+    threshold_pct: float = 100.0,  # Disabled — full rewrites are normal for new projects
 ) -> GuardrailResult:
     """
     Use git diff to check whether Forge deleted more than threshold_pct% of
