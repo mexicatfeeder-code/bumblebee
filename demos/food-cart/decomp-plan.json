@@ -1,28 +1,28 @@
 {
-  "gate_count": 4,
-  "total_tickets": 22,
+  "gate_count": 2,
+  "total_tickets": 21,
   "parent_count": 0,
   "child_count": 0,
   "tickets": [
     {
       "id": "FOODCART-P0-001",
       "gate": 0,
-      "description": "Define TypeScript types for MenuCategory, MenuItem, Order, OrderStatus, and Settings used throughout the app.",
+      "description": "Define shared TypeScript types for MenuCategory, MenuItem, Order, OrderStatus, and Settings used across frontend and backend.",
       "required_output_files": [
-        "src/types/index.ts"
+        "src/types/shared.ts"
       ],
       "depends_on": [],
       "parent_id": null,
       "interaction_spec": "",
       "constraints": [
         "Use TypeScript interfaces and enums",
-        "Export all types from this file"
+        "Export all types from the file"
       ],
       "context_files": [],
-      "worker_done_criteria": "File exports MenuCategory, MenuItem, Order, OrderStatus, and Settings types/interfaces used in frontend and backend.",
-      "qa_done_criteria": "Verify types match PRD data structures and cover all required fields.",
+      "worker_done_criteria": "File exports MenuCategory, MenuItem, Order, OrderStatus, and Settings types/interfaces matching PRD data structures",
+      "qa_done_criteria": "Verify types match PRD fields and are exported correctly",
       "qa_cmd": [
-        "cat src/types/index.ts"
+        "cat src/types/shared.ts"
       ],
       "requires_live_review": false,
       "is_parent": false
@@ -30,22 +30,22 @@
     {
       "id": "FOODCART-P0-002",
       "gate": 0,
-      "description": "Set up SQLite database schema and connection using SQLAlchemy for MenuCategory, MenuItem, Order, and Settings tables.",
+      "description": "Setup SQLite database schema for categories, menu_items, orders, and settings tables with appropriate fields and constraints.",
       "required_output_files": [
-        "backend/db.py"
+        "backend/db/schema.sql"
       ],
       "depends_on": [],
       "parent_id": null,
       "interaction_spec": "",
       "constraints": [
-        "Use SQLAlchemy ORM",
-        "Create tables for categories, items, orders, and settings",
-        "Use SQLite file 'foodcart.db' in project root"
+        "Use SQLite syntax",
+        "Include indexes on foreign keys and order status"
       ],
       "context_files": [],
-      "worker_done_criteria": "File exports SQLAlchemy Base, engine, sessionmaker, and ORM models for MenuCategory, MenuItem, Order, and Settings.",
-      "qa_done_criteria": "Verify tables have correct columns and relationships as per PRD.",
+      "worker_done_criteria": "schema.sql defines tables for categories, menu_items, orders, and settings with correct columns and types",
+      "qa_done_criteria": "Verify schema matches PRD data model and supports required queries",
       "qa_cmd": [
+        "sqlite3 foodcart.db < backend/db/schema.sql",
         "sqlite3 foodcart.db .schema"
       ],
       "requires_live_review": false,
@@ -54,9 +54,9 @@
     {
       "id": "FOODCART-P0-003",
       "gate": 0,
-      "description": "Create FastAPI app instance with CORS middleware allowing local network access and mount static files for frontend build.",
+      "description": "Implement FastAPI backend app skeleton with SQLite connection, CORS middleware, and static file serving for built frontend.",
       "required_output_files": [
-        "backend/main.py"
+        "backend/app/main.py"
       ],
       "depends_on": [
         "FOODCART-P0-002"
@@ -65,16 +65,16 @@
       "interaction_spec": "",
       "constraints": [
         "Use FastAPI",
-        "Allow CORS from all origins",
-        "Serve frontend build from /static"
+        "Serve static files from ../frontend/dist",
+        "Enable CORS for all origins"
       ],
       "context_files": [
-        "backend/db.py"
+        "backend/db/schema.sql"
       ],
-      "worker_done_criteria": "File exports FastAPI app instance with CORS and static files mounted.",
-      "qa_done_criteria": "Verify app runs and serves static files from /static endpoint.",
+      "worker_done_criteria": "main.py creates FastAPI app, connects to SQLite, serves static frontend, and enables CORS",
+      "qa_done_criteria": "Run backend and verify GET / returns frontend index.html",
       "qa_cmd": [
-        "uvicorn backend.main:app --reload"
+        "uvicorn backend.app.main:app --reload"
       ],
       "requires_live_review": false,
       "is_parent": false
@@ -82,27 +82,22 @@
     {
       "id": "FOODCART-P0-004",
       "gate": 0,
-      "description": "Implement WebSocket manager utility to handle multiple client connections with broadcast and send personal message methods.",
+      "description": "Create React app entrypoint with Vite, Tailwind CSS setup, and basic App component rendering a placeholder.",
       "required_output_files": [
-        "backend/websocket_manager.py"
+        "frontend/src/main.tsx"
       ],
-      "depends_on": [
-        "FOODCART-P0-003"
-      ],
+      "depends_on": [],
       "parent_id": null,
       "interaction_spec": "",
       "constraints": [
-        "Use FastAPI WebSocket",
-        "Manage connected clients in memory",
-        "Support broadcast and send to single client"
+        "Use React 18 with createRoot",
+        "Import Tailwind CSS from index.css"
       ],
-      "context_files": [
-        "backend/main.py"
-      ],
-      "worker_done_criteria": "File exports WebSocketManager class with connect, disconnect, send_personal_message, and broadcast methods.",
-      "qa_done_criteria": "Verify manager can track connections and send messages correctly.",
+      "context_files": [],
+      "worker_done_criteria": "main.tsx renders App component with Tailwind CSS styles applied",
+      "qa_done_criteria": "Run frontend dev server and see placeholder page with Tailwind styling",
       "qa_cmd": [
-        "pytest backend/websocket_manager.py"
+        "npm run dev"
       ],
       "requires_live_review": false,
       "is_parent": false
@@ -110,202 +105,24 @@
     {
       "id": "FOODCART-P0-005",
       "gate": 0,
-      "description": "Create React app entry point with Tailwind CSS setup and global styles for mobile-first responsive design.",
+      "description": "Implement WebSocket server setup in FastAPI backend to support real-time order status updates and admin notifications.",
       "required_output_files": [
-        "src/main.tsx"
-      ],
-      "depends_on": [],
-      "parent_id": null,
-      "interaction_spec": "",
-      "constraints": [
-        "Use React 18 createRoot",
-        "Import Tailwind CSS from src/index.css",
-        "Set viewport meta tag in index.html"
-      ],
-      "context_files": [],
-      "worker_done_criteria": "File renders React.StrictMode root with empty App component placeholder.",
-      "qa_done_criteria": "Verify app renders blank page with Tailwind styles applied.",
-      "qa_cmd": [
-        "npm run dev"
-      ],
-      "requires_live_review": false,
-      "is_parent": false
-    },
-    {
-      "id": "FOODCART-P0-006",
-      "gate": 0,
-      "description": "Configure Vite to build React frontend and serve static files from backend /static endpoint.",
-      "required_output_files": [
-        "vite.config.ts"
+        "backend/app/ws.py"
       ],
       "depends_on": [
-        "FOODCART-P0-005"
-      ],
-      "parent_id": null,
-      "interaction_spec": "",
-      "constraints": [
-        "Set build outDir to ../backend/static",
-        "Configure base path for static assets"
-      ],
-      "context_files": [
-        "src/main.tsx"
-      ],
-      "worker_done_criteria": "File exports Vite config that outputs build to backend static folder.",
-      "qa_done_criteria": "Verify frontend build files appear in backend/static after build.",
-      "qa_cmd": [
-        "npm run build",
-        "ls backend/static"
-      ],
-      "requires_live_review": false,
-      "is_parent": false
-    },
-    {
-      "id": "FOODCART-P1-001",
-      "gate": 1,
-      "description": "Implement backend API endpoints for MenuCategory CRUD: list, create, update, delete, and reorder categories.",
-      "required_output_files": [
-        "backend/api/menu_category.py"
-      ],
-      "depends_on": [
-        "FOODCART-P0-002",
         "FOODCART-P0-003"
       ],
       "parent_id": null,
       "interaction_spec": "",
       "constraints": [
-        "Use FastAPI APIRouter",
-        "Use router prefix /api/menu-categories",
-        "Use SQLAlchemy session dependency"
+        "Use FastAPI WebSocketRoute",
+        "Manage connected clients with in-memory store"
       ],
       "context_files": [
-        "backend/db.py",
-        "backend/main.py"
+        "backend/app/main.py"
       ],
-      "worker_done_criteria": "File exports router with endpoints GET /, POST /, PUT /{id}, DELETE /{id}, PATCH /reorder",
-      "qa_done_criteria": "Verify endpoints perform correct DB operations and return JSON responses.",
-      "qa_cmd": [
-        "curl http://localhost:8000/api/menu-categories"
-      ],
-      "requires_live_review": false,
-      "is_parent": false
-    },
-    {
-      "id": "FOODCART-P1-002",
-      "gate": 1,
-      "description": "Implement backend API endpoints for MenuItem CRUD with photo upload support and availability toggle.",
-      "required_output_files": [
-        "backend/api/menu_item.py"
-      ],
-      "depends_on": [
-        "FOODCART-P0-002",
-        "FOODCART-P0-003"
-      ],
-      "parent_id": null,
-      "interaction_spec": "",
-      "constraints": [
-        "Use FastAPI APIRouter",
-        "Use multipart/form-data for photo upload",
-        "Store photos in backend/uploads",
-        "Limit photo size to 5MB"
-      ],
-      "context_files": [
-        "backend/db.py",
-        "backend/main.py"
-      ],
-      "worker_done_criteria": "File exports router with endpoints GET /, POST /, PUT /{id}, DELETE /{id} supporting photo upload and availability toggle",
-      "qa_done_criteria": "Verify photo uploads save files and DB updates accordingly.",
-      "qa_cmd": [
-        "curl -F 'photo=@test.jpg' http://localhost:8000/api/menu-items"
-      ],
-      "requires_live_review": false,
-      "is_parent": false
-    },
-    {
-      "id": "FOODCART-P1-003",
-      "gate": 1,
-      "description": "Implement backend API endpoints for Orders: create order, list orders, update order status, and get order by ID.",
-      "required_output_files": [
-        "backend/api/order.py"
-      ],
-      "depends_on": [
-        "FOODCART-P0-002",
-        "FOODCART-P0-003",
-        "FOODCART-P0-004"
-      ],
-      "parent_id": null,
-      "interaction_spec": "",
-      "constraints": [
-        "Use FastAPI APIRouter",
-        "Broadcast order status changes via WebSocket",
-        "Order status enum: Preparing, Ready, Picked Up"
-      ],
-      "context_files": [
-        "backend/db.py",
-        "backend/main.py",
-        "backend/websocket_manager.py"
-      ],
-      "worker_done_criteria": "File exports router with POST /, GET /, PUT /{id}/status, GET /{id} endpoints and sends WebSocket updates",
-      "qa_done_criteria": "Verify orders can be created, updated, listed, and status updates broadcasted.",
-      "qa_cmd": [
-        "curl -X POST http://localhost:8000/api/orders -d '{...}'"
-      ],
-      "requires_live_review": false,
-      "is_parent": false
-    },
-    {
-      "id": "FOODCART-P1-004",
-      "gate": 1,
-      "description": "Implement backend API endpoints for Settings: get and update cart name, operating hours, and admin PIN.",
-      "required_output_files": [
-        "backend/api/settings.py"
-      ],
-      "depends_on": [
-        "FOODCART-P0-002",
-        "FOODCART-P0-003"
-      ],
-      "parent_id": null,
-      "interaction_spec": "",
-      "constraints": [
-        "Use FastAPI APIRouter",
-        "Settings stored in single DB row",
-        "Default admin PIN 1234"
-      ],
-      "context_files": [
-        "backend/db.py",
-        "backend/main.py"
-      ],
-      "worker_done_criteria": "File exports router with GET / and PUT / endpoints for settings",
-      "qa_done_criteria": "Verify settings can be retrieved and updated successfully.",
-      "qa_cmd": [
-        "curl http://localhost:8000/api/settings"
-      ],
-      "requires_live_review": false,
-      "is_parent": false
-    },
-    {
-      "id": "FOODCART-P1-005",
-      "gate": 1,
-      "description": "Implement backend WebSocket endpoint for real-time order status updates and admin notifications.",
-      "required_output_files": [
-        "backend/api/ws.py"
-      ],
-      "depends_on": [
-        "FOODCART-P0-004",
-        "FOODCART-P0-003"
-      ],
-      "parent_id": null,
-      "interaction_spec": "",
-      "constraints": [
-        "Use FastAPI WebSocket route /ws",
-        "Manage client connections with WebSocketManager",
-        "Send JSON messages with event and data fields"
-      ],
-      "context_files": [
-        "backend/websocket_manager.py",
-        "backend/main.py"
-      ],
-      "worker_done_criteria": "File exports websocket endpoint that accepts connections and handles messages",
-      "qa_done_criteria": "Verify clients can connect and receive broadcast messages.",
+      "worker_done_criteria": "ws.py exports websocket endpoint handling connections and broadcasting order status updates",
+      "qa_done_criteria": "Connect with WebSocket client and verify messages can be sent and received",
       "qa_cmd": [
         "websocat ws://localhost:8000/ws"
       ],
@@ -313,330 +130,481 @@
       "is_parent": false
     },
     {
-      "id": "FOODCART-P2-001",
-      "gate": 2,
-      "description": "Create React MenuBrowse page that fetches menu categories and items, displays items grouped by category with photos, descriptions, and prices.",
+      "id": "FOODCART-P0-006",
+      "gate": 0,
+      "description": "Create React WebSocket client hook to connect to backend WebSocket and provide real-time order status updates.",
       "required_output_files": [
-        "src/pages/MenuBrowse.tsx"
+        "frontend/src/hooks/useOrderStatusWebSocket.ts"
       ],
       "depends_on": [
-        "FOODCART-P1-001",
-        "FOODCART-P1-002",
-        "FOODCART-P0-001",
-        "FOODCART-P0-005"
-      ],
-      "parent_id": null,
-      "interaction_spec": "User opens app, sees categories with items, each item shows photo, name, description, price.",
-      "constraints": [
-        "Use fetch API to GET /api/menu-categories and /api/menu-items",
-        "Use Tailwind CSS for styling",
-        "Display items grouped by category"
-      ],
-      "context_files": [
-        "src/types/index.ts"
-      ],
-      "worker_done_criteria": "File exports MenuBrowse component that fetches and renders menu grouped by category with photos and details.",
-      "qa_done_criteria": "Verify menu loads correctly with categories and items displayed as per PRD.",
-      "qa_cmd": [
-        "npm run dev"
-      ],
-      "requires_live_review": false,
-      "is_parent": false
-    },
-    {
-      "id": "FOODCART-P2-002",
-      "gate": 2,
-      "description": "Create React CartContext and CartProvider to manage cart state with add, remove, update quantity methods.",
-      "required_output_files": [
-        "src/context/CartContext.tsx"
-      ],
-      "depends_on": [
-        "FOODCART-P0-001",
         "FOODCART-P0-005"
       ],
       "parent_id": null,
       "interaction_spec": "",
       "constraints": [
-        "Use React context and hooks",
-        "Persist cart state in localStorage"
+        "Use React hooks",
+        "Auto-reconnect with exponential backoff on disconnect"
       ],
       "context_files": [
-        "src/types/index.ts"
+        "frontend/src/types/shared.ts"
       ],
-      "worker_done_criteria": "File exports CartProvider and useCart hook managing cart items with quantity controls.",
-      "qa_done_criteria": "Verify cart state updates correctly and persists across reloads.",
+      "worker_done_criteria": "Hook connects to /ws, exposes order status updates, and handles reconnect logic",
+      "qa_done_criteria": "Verify hook receives messages and reconnects after disconnect",
       "qa_cmd": [
-        "npm run dev"
+        "npm run dev",
+        "use hook in test component"
       ],
       "requires_live_review": false,
       "is_parent": false
     },
     {
-      "id": "FOODCART-P2-003",
-      "gate": 2,
-      "description": "Create React CartSidebar component that displays cart items with quantity controls and total price, and a submit order button.",
+      "id": "FOODCART-P1-001",
+      "gate": 1,
+      "description": "Implement backend API endpoints for menu categories CRUD: create, read (list), update, delete, and reorder.",
       "required_output_files": [
-        "src/components/CartSidebar.tsx"
+        "backend/app/api/categories.py"
       ],
       "depends_on": [
-        "FOODCART-P2-002",
-        "FOODCART-P0-001",
+        "FOODCART-P0-003",
+        "FOODCART-P0-002"
+      ],
+      "parent_id": null,
+      "interaction_spec": "",
+      "constraints": [
+        "Use FastAPI APIRouter",
+        "Use async endpoints",
+        "Use dependency injection for DB"
+      ],
+      "context_files": [
+        "backend/db/schema.sql"
+      ],
+      "worker_done_criteria": "categories.py exports router with endpoints for all CRUD operations and reordering",
+      "qa_done_criteria": "Test endpoints with curl or HTTP client for full CRUD and reorder functionality",
+      "qa_cmd": [
+        "curl -X GET http://localhost:8000/api/categories"
+      ],
+      "requires_live_review": false,
+      "is_parent": false
+    },
+    {
+      "id": "FOODCART-P1-002",
+      "gate": 1,
+      "description": "Implement backend API endpoints for menu items CRUD with photo upload support and availability toggle.",
+      "required_output_files": [
+        "backend/app/api/menu_items.py"
+      ],
+      "depends_on": [
+        "FOODCART-P0-003",
+        "FOODCART-P0-002"
+      ],
+      "parent_id": null,
+      "interaction_spec": "",
+      "constraints": [
+        "Use FastAPI APIRouter",
+        "Use UploadFile for photo uploads",
+        "Limit photo size to 5MB"
+      ],
+      "context_files": [
+        "backend/db/schema.sql"
+      ],
+      "worker_done_criteria": "menu_items.py exports router with CRUD endpoints including photo upload and availability toggle",
+      "qa_done_criteria": "Test create, update with photo upload, toggle availability, and delete endpoints",
+      "qa_cmd": [
+        "curl -F 'photo=@test.jpg' -X POST http://localhost:8000/api/menu_items"
+      ],
+      "requires_live_review": false,
+      "is_parent": false
+    },
+    {
+      "id": "FOODCART-P1-003",
+      "gate": 1,
+      "description": "Implement backend API endpoints for orders: create order, list orders (admin), and update order status.",
+      "required_output_files": [
+        "backend/app/api/orders.py"
+      ],
+      "depends_on": [
+        "FOODCART-P0-003",
+        "FOODCART-P0-002",
         "FOODCART-P0-005"
       ],
       "parent_id": null,
-      "interaction_spec": "User adds items to cart, opens sidebar, adjusts quantities, sees total price, and clicks submit order.",
+      "interaction_spec": "",
       "constraints": [
-        "Use CartContext for state",
+        "Use FastAPI APIRouter",
+        "Broadcast order status updates via WebSocket on status change"
+      ],
+      "context_files": [
+        "backend/db/schema.sql"
+      ],
+      "worker_done_criteria": "orders.py exports router with endpoints to create orders, list orders, and update status with WS broadcast",
+      "qa_done_criteria": "Create order, update status, and verify WebSocket clients receive updates",
+      "qa_cmd": [
+        "curl -X POST http://localhost:8000/api/orders",
+        "websocat ws://localhost:8000/ws"
+      ],
+      "requires_live_review": false,
+      "is_parent": false
+    },
+    {
+      "id": "FOODCART-P1-004",
+      "gate": 1,
+      "description": "Implement backend API endpoints for settings: get and update cart name, operating hours, and admin PIN.",
+      "required_output_files": [
+        "backend/app/api/settings.py"
+      ],
+      "depends_on": [
+        "FOODCART-P0-003",
+        "FOODCART-P0-002"
+      ],
+      "parent_id": null,
+      "interaction_spec": "",
+      "constraints": [
+        "Use FastAPI APIRouter",
+        "Store settings in SQLite settings table"
+      ],
+      "context_files": [
+        "backend/db/schema.sql"
+      ],
+      "worker_done_criteria": "settings.py exports router with GET and PUT endpoints for settings",
+      "qa_done_criteria": "Verify settings can be retrieved and updated via API",
+      "qa_cmd": [
+        "curl http://localhost:8000/api/settings",
+        "curl -X PUT -d '{...}' http://localhost:8000/api/settings"
+      ],
+      "requires_live_review": false,
+      "is_parent": false
+    },
+    {
+      "id": "FOODCART-P1-005",
+      "gate": 1,
+      "description": "Implement React page component for customers to browse menu grouped by category with photos, descriptions, and prices.",
+      "required_output_files": [
+        "frontend/src/pages/MenuBrowse.tsx"
+      ],
+      "depends_on": [
+        "FOODCART-P1-001",
+        "FOODCART-P1-002",
+        "FOODCART-P0-001"
+      ],
+      "parent_id": null,
+      "interaction_spec": "User opens app, sees menu categories, taps category to expand items, views item photo, description, price.",
+      "constraints": [
+        "Use fetch to GET /api/categories and /api/menu_items",
         "Use Tailwind CSS for styling"
       ],
       "context_files": [
-        "src/context/CartContext.tsx",
-        "src/types/index.ts"
+        "frontend/src/types/shared.ts"
       ],
-      "worker_done_criteria": "File exports CartSidebar component showing cart items, quantity controls, total price, and submit button.",
-      "qa_done_criteria": "Verify cart updates and submit button triggers order submission callback.",
+      "worker_done_criteria": "MenuBrowse component fetches categories and menu items, displays grouped menu with photos and details",
+      "qa_done_criteria": "Verify menu loads correctly with categories and items displayed as per PRD",
       "qa_cmd": [
-        "npm run dev"
+        "npm run dev",
+        "open MenuBrowse page"
       ],
       "requires_live_review": false,
       "is_parent": false
     },
     {
-      "id": "FOODCART-P2-004",
-      "gate": 2,
-      "description": "Create React OrderSubmission component that submits cart items to backend /api/orders and shows confirmation with order number.",
+      "id": "FOODCART-P1-006",
+      "gate": 1,
+      "description": "Implement React cart component allowing customers to add menu items with quantity controls and view cart summary.",
       "required_output_files": [
-        "src/components/OrderSubmission.tsx"
-      ],
-      "depends_on": [
-        "FOODCART-P1-003",
-        "FOODCART-P2-002",
-        "FOODCART-P0-001",
-        "FOODCART-P0-005"
-      ],
-      "parent_id": null,
-      "interaction_spec": "User clicks submit order, component sends POST /api/orders, then shows confirmation with order number.",
-      "constraints": [
-        "Use fetch POST with JSON body",
-        "Clear cart on success",
-        "Handle errors with toast"
-      ],
-      "context_files": [
-        "src/context/CartContext.tsx",
-        "src/types/index.ts"
-      ],
-      "worker_done_criteria": "File exports OrderSubmission component that submits order and displays confirmation message.",
-      "qa_done_criteria": "Verify order submission works and confirmation displays order number.",
-      "qa_cmd": [
-        "npm run dev"
-      ],
-      "requires_live_review": false,
-      "is_parent": false
-    },
-    {
-      "id": "FOODCART-P2-005",
-      "gate": 2,
-      "description": "Create React OrderStatusTracker component that connects to WebSocket /ws and displays real-time order status updates.",
-      "required_output_files": [
-        "src/components/OrderStatusTracker.tsx"
+        "frontend/src/components/Cart.tsx"
       ],
       "depends_on": [
         "FOODCART-P1-005",
-        "FOODCART-P0-001",
-        "FOODCART-P0-005"
+        "FOODCART-P0-001"
       ],
       "parent_id": null,
-      "interaction_spec": "User enters order number, component connects WebSocket, listens for status updates, and displays current status.",
+      "interaction_spec": "User taps + on menu item to add to cart, adjusts quantity with + and -, sees updated total in cart.",
       "constraints": [
-        "Use native WebSocket API",
-        "Auto-reconnect with exponential backoff",
-        "Show status transitions Preparing \u2192 Ready \u2192 Picked Up"
+        "Use React state hooks",
+        "Export Cart component for use in MenuBrowse page"
       ],
       "context_files": [
-        "src/types/index.ts"
+        "frontend/src/types/shared.ts",
+        "frontend/src/pages/MenuBrowse.tsx"
       ],
-      "worker_done_criteria": "File exports OrderStatusTracker component that manages WebSocket connection and displays live order status.",
-      "qa_done_criteria": "Verify real-time status updates received and displayed correctly.",
+      "worker_done_criteria": "Cart component manages items with quantities, calculates total, and exposes submit order trigger",
+      "qa_done_criteria": "Add/remove items, adjust quantities, verify cart total updates correctly",
       "qa_cmd": [
-        "npm run dev"
+        "npm run dev",
+        "interact with cart on MenuBrowse page"
       ],
       "requires_live_review": false,
       "is_parent": false
     },
     {
-      "id": "FOODCART-P3-001",
-      "gate": 3,
-      "description": "Create React AdminLogin page that prompts for PIN and validates against backend /api/settings admin PIN, storing login state.",
+      "id": "FOODCART-P1-007",
+      "gate": 1,
+      "description": "Implement React order submission form and confirmation page showing order number after successful submission.",
       "required_output_files": [
-        "src/pages/AdminLogin.tsx"
+        "frontend/src/pages/OrderSubmit.tsx"
+      ],
+      "depends_on": [
+        "FOODCART-P1-006",
+        "FOODCART-P1-003",
+        "FOODCART-P0-001"
+      ],
+      "parent_id": null,
+      "interaction_spec": "User reviews cart, taps submit, form sends order to backend, then shows confirmation with order number.",
+      "constraints": [
+        "POST order to /api/orders",
+        "Show loading and error states",
+        "Use Tailwind CSS"
+      ],
+      "context_files": [
+        "frontend/src/components/Cart.tsx",
+        "frontend/src/types/shared.ts"
+      ],
+      "worker_done_criteria": "OrderSubmit component submits order, handles response, and displays confirmation with order number",
+      "qa_done_criteria": "Submit order and verify confirmation page with correct order number appears",
+      "qa_cmd": [
+        "npm run dev",
+        "submit order flow"
+      ],
+      "requires_live_review": false,
+      "is_parent": false
+    },
+    {
+      "id": "FOODCART-P1-008",
+      "gate": 1,
+      "description": "Implement React order status tracking page using WebSocket to show real-time status updates (Preparing \u2192 Ready \u2192 Picked Up).",
+      "required_output_files": [
+        "frontend/src/pages/OrderStatus.tsx"
+      ],
+      "depends_on": [
+        "FOODCART-P0-006",
+        "FOODCART-P0-001"
+      ],
+      "parent_id": null,
+      "interaction_spec": "User enters order number, page connects to WebSocket, displays current status and updates in real-time.",
+      "constraints": [
+        "Use useOrderStatusWebSocket hook",
+        "Show status with warm color accents"
+      ],
+      "context_files": [
+        "frontend/src/hooks/useOrderStatusWebSocket.ts"
+      ],
+      "worker_done_criteria": "OrderStatus component connects via WebSocket and updates UI on status changes",
+      "qa_done_criteria": "Verify real-time status updates received and displayed correctly",
+      "qa_cmd": [
+        "npm run dev",
+        "simulate backend status changes"
+      ],
+      "requires_live_review": false,
+      "is_parent": false
+    },
+    {
+      "id": "FOODCART-P1-009",
+      "gate": 1,
+      "description": "Implement React admin login page with PIN input and validation against backend settings API.",
+      "required_output_files": [
+        "frontend/src/pages/AdminLogin.tsx"
       ],
       "depends_on": [
         "FOODCART-P1-004",
-        "FOODCART-P0-001",
-        "FOODCART-P0-005"
+        "FOODCART-P0-001"
       ],
       "parent_id": null,
-      "interaction_spec": "User enters PIN, clicks submit, app validates PIN via API, on success navigates to admin panel, on failure shows error.",
+      "interaction_spec": "Admin enters PIN, taps submit, PIN validated via API, on success redirect to admin panel, on failure show error.",
       "constraints": [
-        "Use fetch GET /api/settings to get PIN",
-        "Store login state in React context or localStorage"
+        "POST PIN to /api/settings for validation",
+        "Show error toast on invalid PIN"
       ],
       "context_files": [
-        "src/types/index.ts"
+        "frontend/src/types/shared.ts"
       ],
-      "worker_done_criteria": "File exports AdminLogin component that authenticates PIN and manages login state.",
-      "qa_done_criteria": "Verify correct PIN grants access, wrong PIN shows error.",
+      "worker_done_criteria": "AdminLogin component validates PIN and redirects or shows error accordingly",
+      "qa_done_criteria": "Test login with correct and incorrect PINs",
       "qa_cmd": [
-        "npm run dev"
+        "npm run dev",
+        "attempt admin login"
       ],
       "requires_live_review": false,
       "is_parent": false
     },
     {
-      "id": "FOODCART-P3-002",
-      "gate": 3,
-      "description": "Create React AdminMenuManagement page that lists menu items with edit and delete buttons, and a button to add new item.",
+      "id": "FOODCART-P1-010",
+      "gate": 1,
+      "description": "Implement React admin panel main page with navigation links to menu management, order management, and settings.",
       "required_output_files": [
-        "src/pages/AdminMenuManagement.tsx"
+        "frontend/src/pages/AdminPanel.tsx"
       ],
       "depends_on": [
-        "FOODCART-P1-002",
-        "FOODCART-P0-001",
-        "FOODCART-P0-005",
-        "FOODCART-P3-001"
+        "FOODCART-P1-009"
       ],
       "parent_id": null,
-      "interaction_spec": "Admin views list of menu items, clicks edit to open edit form, delete to remove, or add new to open create form.",
+      "interaction_spec": "Admin logs in, sees admin panel with navigation links, taps links to go to respective pages.",
       "constraints": [
-        "Use fetch API for CRUD",
-        "Protect page behind admin login state"
+        "Use React Router for navigation",
+        "Use Tailwind CSS for layout"
       ],
       "context_files": [
-        "src/types/index.ts"
+        "frontend/src/types/shared.ts"
       ],
-      "worker_done_criteria": "File exports AdminMenuManagement component that lists items with edit, delete, and add new functionality.",
-      "qa_done_criteria": "Verify menu items load and buttons trigger correct actions.",
+      "worker_done_criteria": "AdminPanel component renders navigation and routes to subpages",
+      "qa_done_criteria": "Verify navigation links and routing work correctly",
       "qa_cmd": [
-        "npm run dev"
+        "npm run dev",
+        "navigate admin panel"
       ],
       "requires_live_review": false,
       "is_parent": false
     },
     {
-      "id": "FOODCART-P3-003",
-      "gate": 3,
-      "description": "Create React AdminMenuItemForm component for creating and editing menu items with photo upload and availability toggle.",
+      "id": "FOODCART-P1-011",
+      "gate": 1,
+      "description": "Implement React admin menu management page to list, add, edit, delete, and reorder categories.",
       "required_output_files": [
-        "src/components/AdminMenuItemForm.tsx"
+        "frontend/src/pages/AdminCategories.tsx"
+      ],
+      "depends_on": [
+        "FOODCART-P1-001",
+        "FOODCART-P1-010",
+        "FOODCART-P0-001"
+      ],
+      "parent_id": null,
+      "interaction_spec": "Admin views categories list, adds new, edits existing, deletes, and reorders categories with drag and drop.",
+      "constraints": [
+        "Use fetch to call categories API",
+        "Use Tailwind CSS",
+        "Use accessible drag-and-drop library"
+      ],
+      "context_files": [
+        "frontend/src/types/shared.ts"
+      ],
+      "worker_done_criteria": "AdminCategories component manages categories CRUD and reorder via API",
+      "qa_done_criteria": "Test full categories CRUD and reorder functionality",
+      "qa_cmd": [
+        "npm run dev",
+        "interact with categories page"
+      ],
+      "requires_live_review": false,
+      "is_parent": false
+    },
+    {
+      "id": "FOODCART-P1-012",
+      "gate": 1,
+      "description": "Implement React admin menu items management page to list, add, edit, delete items with photo upload and availability toggle.",
+      "required_output_files": [
+        "frontend/src/pages/AdminMenuItems.tsx"
       ],
       "depends_on": [
         "FOODCART-P1-002",
-        "FOODCART-P0-001",
-        "FOODCART-P0-005"
+        "FOODCART-P1-011",
+        "FOODCART-P1-010",
+        "FOODCART-P0-001"
       ],
       "parent_id": null,
-      "interaction_spec": "Admin fills form fields, uploads photo, toggles availability, submits to create or update menu item.",
+      "interaction_spec": "Admin views items list, adds new with photo upload, edits details, toggles availability, deletes items.",
       "constraints": [
-        "Use multipart/form-data for photo upload",
-        "Validate photo size <= 5MB",
+        "Use fetch for menu items API",
+        "Use file input for photo upload",
         "Show upload errors inline"
       ],
       "context_files": [
-        "src/types/index.ts"
+        "frontend/src/types/shared.ts"
       ],
-      "worker_done_criteria": "File exports AdminMenuItemForm component that handles create/edit with photo upload and availability toggle.",
-      "qa_done_criteria": "Verify form submits correctly and photo uploads work.",
+      "worker_done_criteria": "AdminMenuItems component supports full CRUD with photo upload and availability toggle",
+      "qa_done_criteria": "Test add/edit/delete items including photo upload and toggle",
       "qa_cmd": [
-        "npm run dev"
+        "npm run dev",
+        "interact with menu items page"
       ],
       "requires_live_review": false,
       "is_parent": false
     },
     {
-      "id": "FOODCART-P3-004",
-      "gate": 3,
-      "description": "Create React AdminOrderManagement page that lists incoming orders with timestamps and allows updating order status with one click.",
+      "id": "FOODCART-P1-013",
+      "gate": 1,
+      "description": "Implement React admin orders management page showing incoming orders with timestamps and one-click status updates.",
       "required_output_files": [
-        "src/pages/AdminOrderManagement.tsx"
+        "frontend/src/pages/AdminOrders.tsx"
       ],
       "depends_on": [
         "FOODCART-P1-003",
+        "FOODCART-P1-010",
         "FOODCART-P0-001",
-        "FOODCART-P0-005",
-        "FOODCART-P3-001"
+        "FOODCART-P0-006"
       ],
       "parent_id": null,
-      "interaction_spec": "Admin views orders list, clicks status button to cycle status Preparing \u2192 Ready \u2192 Picked Up, list updates in real-time.",
+      "interaction_spec": "Admin sees live list of orders, clicks buttons to update status, list updates in real-time via WebSocket.",
       "constraints": [
-        "Use fetch API for order updates",
-        "Use WebSocket for real-time order notifications",
-        "Protect page behind admin login"
+        "Use WebSocket hook for real-time updates",
+        "Use fetch for status updates",
+        "Show timestamps in local time"
       ],
       "context_files": [
-        "src/types/index.ts"
+        "frontend/src/hooks/useOrderStatusWebSocket.ts",
+        "frontend/src/types/shared.ts"
       ],
-      "worker_done_criteria": "File exports AdminOrderManagement component that lists orders and updates status with real-time updates.",
-      "qa_done_criteria": "Verify orders update status on click and real-time notifications arrive.",
+      "worker_done_criteria": "AdminOrders component lists orders with live updates and allows status changes",
+      "qa_done_criteria": "Verify real-time order updates and status change functionality",
       "qa_cmd": [
-        "npm run dev"
+        "npm run dev",
+        "simulate order flow"
       ],
       "requires_live_review": false,
       "is_parent": false
     },
     {
-      "id": "FOODCART-P3-005",
-      "gate": 3,
-      "description": "Create React AdminDailySalesSummary component that fetches and displays daily sales total and order count.",
+      "id": "FOODCART-P1-014",
+      "gate": 1,
+      "description": "Implement React admin daily sales summary page showing total sales and order counts for current day.",
       "required_output_files": [
-        "src/components/AdminDailySalesSummary.tsx"
+        "frontend/src/pages/AdminSalesSummary.tsx"
       ],
       "depends_on": [
         "FOODCART-P1-003",
-        "FOODCART-P0-001",
-        "FOODCART-P0-005"
+        "FOODCART-P1-010",
+        "FOODCART-P0-001"
       ],
       "parent_id": null,
-      "interaction_spec": "Admin opens admin panel and sees daily sales total and number of orders placed today.",
+      "interaction_spec": "Admin opens sales summary page, sees total sales amount and number of orders for the day.",
       "constraints": [
-        "Use fetch API to get sales summary from backend (implement stub if needed)"
+        "Fetch sales summary data from backend API",
+        "Use Tailwind CSS for styling"
       ],
       "context_files": [
-        "src/types/index.ts"
+        "frontend/src/types/shared.ts"
       ],
-      "worker_done_criteria": "File exports AdminDailySalesSummary component that displays daily sales total and order count.",
-      "qa_done_criteria": "Verify sales summary data is fetched and displayed correctly.",
+      "worker_done_criteria": "AdminSalesSummary component fetches and displays daily sales and order count",
+      "qa_done_criteria": "Verify sales summary matches backend data",
       "qa_cmd": [
-        "npm run dev"
+        "npm run dev",
+        "open sales summary page"
       ],
       "requires_live_review": false,
       "is_parent": false
     },
     {
-      "id": "FOODCART-P3-006",
-      "gate": 3,
-      "description": "Create React AdminSettings page that allows updating cart name, operating hours, and admin PIN.",
+      "id": "FOODCART-P1-015",
+      "gate": 1,
+      "description": "Implement React admin settings page to configure cart name, operating hours, and admin PIN with save functionality.",
       "required_output_files": [
-        "src/pages/AdminSettings.tsx"
+        "frontend/src/pages/AdminSettings.tsx"
       ],
       "depends_on": [
         "FOODCART-P1-004",
-        "FOODCART-P0-001",
-        "FOODCART-P0-005",
-        "FOODCART-P3-001"
+        "FOODCART-P1-010",
+        "FOODCART-P0-001"
       ],
       "parent_id": null,
-      "interaction_spec": "Admin edits settings fields and submits form to update backend settings.",
+      "interaction_spec": "Admin edits cart name, operating hours, and PIN, taps save, settings update via API with success or error feedback.",
       "constraints": [
-        "Use fetch API for GET and PUT /api/settings",
-        "Validate PIN is numeric and 4 digits"
+        "Use fetch for settings API",
+        "Validate inputs before submit",
+        "Show toast notifications"
       ],
       "context_files": [
-        "src/types/index.ts"
+        "frontend/src/types/shared.ts"
       ],
-      "worker_done_criteria": "File exports AdminSettings component that fetches and updates settings with form validation.",
-      "qa_done_criteria": "Verify settings load and update correctly with validation.",
+      "worker_done_criteria": "AdminSettings component loads, edits, validates, and saves settings via API",
+      "qa_done_criteria": "Test settings load and save with validation and feedback",
       "qa_cmd": [
-        "npm run dev"
+        "npm run dev",
+        "edit and save settings"
       ],
       "requires_live_review": false,
       "is_parent": false
