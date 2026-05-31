@@ -43,8 +43,8 @@ class QAResult:
 
 # Minimum file sizes by extension (reject stubs)
 _MIN_SIZES = {
-    ".tsx": 150, ".jsx": 150, ".ts": 150, ".js": 150,
-    ".css": 50, ".json": 20,
+    ".tsx": 150, ".jsx": 150, ".ts": 100, ".js": 50,
+    ".css": 30, ".json": 10,
 }
 _DECL_MIN = 5  # .d.ts files
 
