@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 
 # Cloud API defaults (same as decompose)
 DEFAULT_CLOUD_BASE_URL = "https://api.openai.com/v1"
-DEFAULT_CLOUD_MODEL = "gpt-4.1-mini"
+DEFAULT_CLOUD_MODEL = "gpt-5.5"
 
 WRITE_TOOL = {
     "type": "function",
@@ -185,8 +185,8 @@ def run_integration(config: ProjectConfig, deliverable_root: Path | str) -> tupl
         ],
         "tools": [WRITE_TOOL],
         "tool_choice": "auto",
-        "temperature": 0.1,
-        "max_tokens": 16384,
+        "temperature": 1.0 if model_id.startswith("gpt-5") else 0.1,
+        **({"max_completion_tokens": 16384} if model_id.startswith("gpt-5") else {"max_tokens": 16384}),
     }).encode("utf-8")
 
     url = f"{base_url.rstrip('/')}/chat/completions"
