@@ -50,11 +50,24 @@ _APP_PORTS = {"food-cart": 4177}
 @app.get("/app/{slug}/{rest:path}")
 async def launch_app(slug: str, rest: str = ""):
     port = _APP_PORTS.get(slug)
-    if port:
-        target = f"http://localhost:{port}/{rest}" if rest else f"http://localhost:{port}/"
-        return _RedirectResponse(target)
-    from fastapi.responses import JSONResponse
-    return JSONResponse({"error": f"No app server for '{slug}'"}, status_code=404)
+    if not port:
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"error": f"No app server for '{slug}'"}, status_code=404)
+
+    # Auto-start if not running
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        if s.connect_ex(("127.0.0.1", port)) != 0:
+            # App not running — start it
+            try:
+                from .routers.app_launcher import start_app
+                start_app(slug)
+            except Exception as e:
+                from fastapi.responses import JSONResponse
+                return JSONResponse({"error": f"Failed to start app: {e}"}, status_code=500)
+
+    target = f"http://localhost:{port}/{rest}" if rest else f"http://localhost:{port}/"
+    return _RedirectResponse(target)
 
 
 # --- Serve built frontend (production mode) ---
