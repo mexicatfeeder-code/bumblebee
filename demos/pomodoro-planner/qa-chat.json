@@ -1,0 +1,42 @@
+[
+  {
+    "role": "user",
+    "content": "Here's the PRD for a pomodoro task planner with a local LLM for scheduling. What questions do you have?",
+    "timestamp": "2026-05-31T09:00:00Z"
+  },
+  {
+    "role": "assistant",
+    "content": "Love the liquid fill timer idea -- that's a great demo piece. Let me nail down the implementation details:\n\n1. **Tech stack** -- The PRD says React + TypeScript + Tailwind + FastAPI. Any strong preferences on component library or should I keep it vanilla React?\n\n2. **Port** -- What port should the app run on? Want to avoid conflicts with the food-cart demo (8000) and the dashboard (8765).\n\n3. **Lemonade model** -- Should the app use whatever model is currently loaded, or target a specific one? The planning prompt needs a model that can follow structured output instructions.",
+    "timestamp": "2026-05-31T09:00:15Z"
+  },
+  {
+    "role": "user",
+    "content": "Vanilla React, no component library. Port 4200. Use whatever model is loaded in Lemonade -- query /v1/models on startup and use the first one. The planning prompt should ask for JSON output with task ordering and estimates.",
+    "timestamp": "2026-05-31T09:01:00Z"
+  },
+  {
+    "role": "assistant",
+    "content": "Clean approach. A couple more:\n\n1. **Timer behavior** -- When a pomodoro ends, should it auto-start the break, or pause and wait for the user to click? Same question for break -> next pomodoro.\n\n2. **LLM streaming** -- SSE from the backend proxying Lemonade's streaming response. Should the chat show a typing indicator while streaming, or render tokens as they arrive?\n\n3. **Task persistence** -- SQLite via the API for tasks, but should chat history also persist across refreshes, or is it session-only?",
+    "timestamp": "2026-05-31T09:01:30Z"
+  },
+  {
+    "role": "user",
+    "content": "Auto-start breaks after pomodoro ends, but pause before the next pomodoro so the user can decide to continue or take a longer break. Stream tokens as they arrive -- that's the visual hook for the demo. Chat history should persist in localStorage so you can see the AI's reasoning after a refresh.",
+    "timestamp": "2026-05-31T09:02:15Z"
+  },
+  {
+    "role": "assistant",
+    "content": "Makes sense. Two more quick ones:\n\n1. **Wave animation detail** -- Multiple layered waves (2-3 sine curves at different speeds/amplitudes) for depth, or a single wave to keep it simple?\n\n2. **Sound** -- The PRD mentions Web Audio API for chimes. Should the sound play automatically, or should there be a mute toggle? Some demo environments are noisy.\n\nI think that covers the implementation gaps.",
+    "timestamp": "2026-05-31T09:02:45Z"
+  },
+  {
+    "role": "user",
+    "content": "Go with 2-3 layered waves -- it looks way better and it's just a few extra SVG paths. Add a mute toggle in the timer panel, default to muted so it doesn't surprise anyone at the demo booth.",
+    "timestamp": "2026-05-31T09:03:30Z"
+  },
+  {
+    "role": "assistant",
+    "content": "Perfect -- all clear. I've got everything I need to generate the technical summary. Click \"Finish Q&A\" when ready to proceed to decomposition.",
+    "timestamp": "2026-05-31T09:03:45Z"
+  }
+]

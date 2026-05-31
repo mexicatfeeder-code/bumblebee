@@ -1,6 +1,7 @@
 {
   "ticketDbPaths": {
-    "food-cart": "C:\\Users\\rad_t\\.openclaw\\workspace\\bumblebee\\demos\\food-cart\\tickets.db"
+    "food-cart": "C:\\Users\\rad_t\\.openclaw\\workspace\\bumblebee\\demos\\food-cart\\tickets.db",
+    "pomodoro-planner": "C:\\Users\\rad_t\\.openclaw\\workspace\\bumblebee\\demos\\pomodoro-planner\\tickets.db"
   },
   "apiPort": 8765,
   "healthChecks": [],

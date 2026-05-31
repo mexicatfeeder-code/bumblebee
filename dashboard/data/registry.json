@@ -24,6 +24,29 @@
         "scaffolded": true,
         "running": true
       }
+    },
+    {
+      "slug": "pomodoro-planner",
+      "name": "Pomodoro Task Planner",
+      "description": "React + FastAPI productivity app with AI-powered scheduling and animated liquid-fill pomodoro timer",
+      "deliverable_root": "../demos/pomodoro-planner/output",
+      "target_system": "local",
+      "status": "approved",
+      "created_at": "2026-05-31T09:00:00Z",
+      "prd_path": "../demos/pomodoro-planner/prd.md",
+      "ref_paths": [],
+      "tech_stack": "React 18 + TypeScript + Vite frontend, FastAPI Python backend, SQLite, Tailwind CSS",
+      "visual_spec_path": null,
+      "architecture_path": null,
+      "checklist": {
+        "named": true,
+        "prd_uploaded": true,
+        "refs_uploaded": false,
+        "qa_complete": true,
+        "approved": true,
+        "scaffolded": true,
+        "running": true
+      }
     }
   ]
 }

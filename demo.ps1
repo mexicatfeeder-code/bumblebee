@@ -23,7 +23,8 @@ param(
     [string]$Project = "food-cart",
     [switch]$NoReset,
     [int]$Port = 8765,
-    [switch]$SkipDashboard
+    [switch]$SkipDashboard,
+    [switch]$ResetAll
 )
 
 $ErrorActionPreference = "Stop"
@@ -126,19 +127,17 @@ if (!(Test-Path $projectDir)) {
 }
 
 if (-not $NoReset) {
-    Write-Host "[2/4] Resetting demo project '$Project'..." -ForegroundColor Cyan
+    Write-Host "[2/4] Resetting demo project(s)..." -ForegroundColor Cyan
     
-    $resetScript = Join-Path $projectDir "reset_demo.py"
-    $seedScript = Join-Path $projectDir "seed_tickets.py"
-    
-    if (Test-Path $resetScript) {
-        python $resetScript
-        Write-Host "  Demo reset complete." -ForegroundColor Green
-    } elseif (Test-Path $seedScript) {
-        python $seedScript
-        Write-Host "  DB re-seeded from scratch." -ForegroundColor Green
+    $resetAllScript = Join-Path $root "demos\reset_all_demos.py"
+    if ($ResetAll) {
+        # Reset ALL demo projects
+        python $resetAllScript
+        Write-Host "  All demos reset." -ForegroundColor Green
     } else {
-        Write-Host "  No reset or seed script found. Using existing DB." -ForegroundColor Yellow
+        # Reset just the selected project
+        python $resetAllScript $Project
+        Write-Host "  Demo '$Project' reset." -ForegroundColor Green
     }
 } else {
     Write-Host "[2/4] Skipping reset (--NoReset)." -ForegroundColor Yellow
