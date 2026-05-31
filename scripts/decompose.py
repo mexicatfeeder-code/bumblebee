@@ -313,13 +313,13 @@ For code files: include the COMPLETE implementation with all imports, all functi
 6. **Database**: Sync `sqlite3` only (NOT aiosqlite). `get_db()` returns connection with `row_factory = sqlite3.Row`. All routers call `get_db()` directly — do NOT use FastAPI `Depends()`.
 7. **Frontend fetch**: Use `fetch()` with relative URLs (`/api/categories`). Always parse as `await res.json()` which returns the array/object directly.
 8. **Shared types**: TypeScript interfaces in `frontend/src/types/index.ts`, Pydantic models in `backend/schemas.py`. These MUST match field-for-field.
-9. **Styling**: Use Tailwind CSS utility classes when the tech stack includes Tailwind. Gate 0 MUST include tailwind.config.js, postcss.config.js, and frontend/src/index.css with `@tailwind base; @tailwind components; @tailwind utilities;`. If Tailwind is NOT in the tech stack, use inline styles. NEVER import component-specific .css files — use only Tailwind classes or inline styles.
+9. **Styling**: Use Tailwind CSS v3 utility classes when the tech stack includes Tailwind. Gate 0 MUST include tailwind.config.js, postcss.config.js, and frontend/src/index.css with `@tailwind base; @tailwind components; @tailwind utilities;`. The package.json MUST pin `"tailwindcss": "^3.4.14"` (NOT v4 which uses a different API). postcss.config.js uses `tailwindcss: {{}}` as a PostCSS plugin. If Tailwind is NOT in the tech stack, use inline styles. NEVER import component-specific .css files — use only Tailwind classes or inline styles.
 10. **Routing**: `react-router-dom` v6. `frontend/src/App.tsx` uses `<BrowserRouter>` + `<Routes>` + `<Route>` for every page.
 
 ## GATE STRUCTURE
 
 **Gate 0 — Foundation** (every project needs these):
-- Ticket for `frontend/package.json` with ALL dependencies (react, react-dom, react-router-dom, typescript, vite, @vitejs/plugin-react, type packages)
+- Ticket for `frontend/package.json` with ALL dependencies (react, react-dom, react-router-dom, typescript, vite, @vitejs/plugin-react, tailwindcss@^3.4.14, postcss, autoprefixer, type packages)
 - Ticket for `frontend/vite.config.ts` with proxy config: `/api` -> backend port
 - Ticket for `frontend/tsconfig.json`, `frontend/index.html`, `frontend/src/main.tsx`
 - Ticket for `frontend/src/types/index.ts` with ALL TypeScript interfaces

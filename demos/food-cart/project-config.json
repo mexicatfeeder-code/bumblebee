@@ -1,11 +1,11 @@
 {
-  "engine_root": "C:\\Users\\rad_t\\.openclaw\\workspace\\bumblebee\\engine",
-  "project_root": "C:\\Users\\rad_t\\.openclaw\\workspace\\bumblebee\\demos\\food-cart",
-  "workspace_root": "C:\\Users\\rad_t\\.openclaw\\workspace\\bumblebee",
-  "deliverable_root": "C:\\Users\\rad_t\\.openclaw\\workspace\\bumblebee\\demos\\food-cart\\output",
-  "db_path": "C:\\Users\\rad_t\\.openclaw\\workspace\\bumblebee\\demos\\food-cart\\tickets.db",
-  "artifacts_dir": "C:\\Users\\rad_t\\.openclaw\\workspace\\bumblebee\\demos\\food-cart\\artifacts",
-  "checks_dir": "C:\\Users\\rad_t\\.openclaw\\workspace\\bumblebee\\demos\\food-cart\\output\\checks",
+  "engine_root": "../../engine",
+  "project_root": ".",
+  "workspace_root": "../..",
+  "deliverable_root": "./output",
+  "db_path": "./tickets.db",
+  "artifacts_dir": "./artifacts",
+  "checks_dir": "./output/checks",
   "forge_agent": "forge",
   "models": {
     "forge": "Qwen3.6-35B-A3B-GGUF",

@@ -1,6 +1,9 @@
 """Run the Bumblebee executor for the Food Cart app."""
 import sys, os
-sys.path.insert(0, r'C:\Users\rad_t\.openclaw\workspace')
+# Add bumblebee parent dir to path so 'bumblebee.engine' is importable
+_this_dir = os.path.dirname(os.path.abspath(__file__))
+_bumblebee_root = os.path.normpath(os.path.join(_this_dir, '..', '..'))
+sys.path.insert(0, os.path.dirname(_bumblebee_root))
 
 from bumblebee.engine.executor import Executor
 from bumblebee.engine.state_machine import StateMachine

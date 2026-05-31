@@ -160,7 +160,7 @@ Write-Host "[5/8] Checking Lemonade (local AI server)..." -ForegroundColor Yello
 $lemonadeUrl = "http://[::1]:13305"
 $lemonadeExe = Join-Path $env:LOCALAPPDATA "lemonade_server\bin\LemonadeServer.exe"
 $lemonadeCli = Join-Path $env:LOCALAPPDATA "lemonade_server\bin\lemonade.exe"
-$requiredModel = "Qwen3.6-27B-GGUF"
+$requiredModel = "Qwen3.6-35B-A3B-GGUF"
 $requiredContext = 32768
 $siftModel = "user.gemma-4-E4B-it-GGUF"
 $siftCheckpoint = "unsloth/gemma-4-E4B-it-GGUF:UD-Q4_K_XL"
@@ -236,7 +236,7 @@ if (-not $health) {
     }
 
     if ($health) {
-        # --- Forge model (Qwen3.6-27B) ---
+        # --- Forge model (Qwen3.6-35B-A3B) ---
         $loadedIds = @()
         if ($health.all_models_loaded) {
             $loadedIds = @($health.all_models_loaded | ForEach-Object { $_.id })

@@ -143,10 +143,15 @@ def direct_dispatch(
         "chat_template_kwargs": {"enable_thinking": False},
     }).encode("utf-8")
 
+    api_key = _get_api_key(config) if config else os.environ.get('BUMBLEBEE_API_KEY', os.environ.get('OPENAI_API_KEY', ''))
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
     req = urllib.request.Request(
         f"{api_url}/chat/completions",
         data=payload,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {_get_api_key(config) if config else os.environ.get('BUMBLEBEE_API_KEY', os.environ.get('OPENAI_API_KEY', ''))}"},
+        headers=headers,
         method="POST",
     )
 
@@ -154,6 +159,16 @@ def direct_dispatch(
     try:
         with urllib.request.urlopen(req, timeout=timeout_seconds) as resp:
             data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode()[:300]
+        except Exception:
+            pass
+        result.error = f"API HTTP {e.code}: {body}"
+        result.duration_seconds = time.time() - started
+        log.error(f"Direct dispatch {ticket_id}: HTTP {e.code} from {api_url}: {body}")
+        return result
     except urllib.error.URLError as e:
         result.error = f"API unreachable: {e}"
         result.duration_seconds = time.time() - started

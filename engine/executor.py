@@ -646,6 +646,7 @@ class Executor:
             }, indent=2), encoding="utf-8")
             return True, f"Direct: {result.tool_calls} tool call(s) in {result.duration_seconds:.0f}s"
         else:
+            log.warning(f"Direct dispatch FAILED for {ticket_id}: {result.error} (duration={result.duration_seconds:.1f}s, tool_calls={result.tool_calls})")
             return False, f"Direct: {result.error}"
 
     def dispatch_next(self) -> str | None:
