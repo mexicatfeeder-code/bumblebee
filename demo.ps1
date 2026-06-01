@@ -42,7 +42,7 @@ Write-Host ""
 Write-Host "[1/4] Checking Lemonade server..." -ForegroundColor Cyan
 $lemonadeUrl = "http://[::1]:13305"
 $lemonadeExe = Join-Path $env:LOCALAPPDATA "lemonade_server\bin\LemonadeServer.exe"
-$requiredModel = "Qwen3.6-27B-GGUF"
+$requiredModel = "Qwen3.6-35B-A3B-GGUF"
 $requiredContext = 32768
 $lemonadeOk = $false
 
